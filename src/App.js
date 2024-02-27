@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Chat } from "./components/Chat";
 import { Auth } from "./components/Auth";
-import { Toolbar } from "./components/Toolbar";
 import { AppWrapper } from "./components/AppWrapper";
 import Cookies from "universal-cookie";
 import "./App.css";
@@ -30,6 +29,7 @@ function ChatApp() {
   function tryToJoin() {
     if (room === "") {
       let randomRoomId = (Math.random() + 1).toString(36).substring(7);
+
       setRoom(randomRoomId);
     }
     setIsInChat(true);
@@ -51,7 +51,6 @@ function ChatApp() {
       ) : (
         <>
           <Chat room={room} />
-          <Toolbar />
         </>
       )}
     </AppWrapper>

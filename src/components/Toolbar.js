@@ -1,15 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Modal from 'react-modal';
+import socketIOClient from "socket.io-client";
+import { auth } from "../firebase-config";
+import {serverTimestamp} from "firebase/firestore";
 
-// import { motion } from 'framer-motion';
-//import { FiChevronRight } from 'react-icons/fi';
-
-// // import { useModal } from '@/modules/modal';
-
-// import MarketButton from './MarketButton';
-// import SpellsButton from './SpellsButton';
-// import OrdererButton from './Orderer';
-// import AttackButton from './AttackButton';
 const customStyles = {
     content: {
       top: '50%',
@@ -20,12 +14,9 @@ const customStyles = {
       transform: 'translate(-50%, -50%)',
     },
   };
-export const Toolbar = () => {
-    let subtitle;
-  //const { openModal } = useModal();
-  const { width } = 2500;
-
-  const [opened, setOpened] = useState(false);
+export const Toolbar = (room, isAutoProceeding) => {
+  let socketio  = socketIOClient("http://localhost:5001")
+  let subtitle;
   const [modalIsOpen, setIsOpen] = useState(false);
 
   function openModal() {
@@ -40,42 +31,33 @@ export const Toolbar = () => {
   function closeModal() {
     setIsOpen(false);
   }
-  useEffect(() => {
-    if (width >= 1024) setOpened(true);
-    else setOpened(false);
-  }, [width]);
 
-  //const handleShare = () => openModal(<ShareModal />);
+  const handleRoundIncrement = async (event) => {
+    event.preventDefault();
+
+    socketio.emit("nextRound", {
+        createdAt: serverTimestamp(),
+        userUid: auth.currentUser.uid,
+        room,
+      })
+  };
+
+  const beginAutoProceeding = async (event) => {
+    event.preventDefault();
+
+    socketio.emit("startRoundTimer", {
+        createdAt: serverTimestamp(),
+        userUid: auth.currentUser.uid,
+        room,
+      })
+  };
 
   return (
     <>
-      {/* <button
-        className="btn-icon absolute bottom-1/2 -left-2 z-50 h-10 w-10 rounded-full bg-black text-2xl transition-none lg:hidden mx-2"
-        animate={{ rotate: opened ? 180 : 0 }}
-        transition={{ duration: 0.2 }}
-        onClick={() => setOpened(!opened)}
-      >
-        &gt;
-      </button>
-      <div
-        className="absolute left-10 top-[50%] z-50 grid grid-cols-2 items-center gap-5 rounded-lg bg-zinc-900 p-5 text-white 2xl:grid-cols-1"
-        animate={{
-          x: opened ? 0 : -160,
-          y: '-50%',
-        }}
-        transition={{
-          duration: 0.2,
-        }}
-      >
-        <MarketButton />
-        <SpellsButton />
-        <OrdererButton />
-        <AttackButton />
-        <button>Hi</button>
-        <div className="h-px w-full bg-white 2xl:hidden" />
-        <div className="h-px w-full bg-white" />
-      </div>*/}
-      <button onClick={openModal}>Convert</button>
+      <div className="centered"><button onClick={openModal}>Convert</button></div>
+      { !isAutoProceeding ?
+        (<div className="centered"><button onClick={handleRoundIncrement}>Next Roundz</button></div> ) :
+        (<div className="centered"><button onClick={beginAutoProceeding}>Start</button></div> )}
       <Modal
         isOpen={modalIsOpen}
         onAfterOpen={afterOpenModal}
