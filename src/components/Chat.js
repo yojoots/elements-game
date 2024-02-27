@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import socketIOClient from "socket.io-client";
 import { db, auth } from "../firebase-config";
 import {
   collection,
@@ -13,6 +14,7 @@ import {
 import "../styles/Chat.css";
 
 export const Chat = ({ room }) => {
+  let socketio  = socketIOClient("http://localhost:5001")
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesRef = collection(db, "messages");
@@ -23,7 +25,7 @@ export const Chat = ({ room }) => {
       where("room", "==", room),
       orderBy("createdAt")
     );
-    const unsuscribe = onSnapshot(queryMessages, (snapshot) => {
+    const unsubscribe = onSnapshot(queryMessages, (snapshot) => {
       let messages = [];
       snapshot.forEach((doc) => {
         messages.push({ ...doc.data(), id: doc.id });
@@ -32,19 +34,28 @@ export const Chat = ({ room }) => {
       setMessages(messages);
     });
 
-    return () => unsuscribe();
+    return () => unsubscribe();
   }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (newMessage === "") return;
-    await addDoc(messagesRef, {
-      text: newMessage,
-      createdAt: serverTimestamp(),
-      user: auth.currentUser.displayName,
-      room,
-    });
+    // await addDoc(messagesRef, {
+    //   text: newMessage,
+    //   createdAt: serverTimestamp(),
+    //   user: auth.currentUser.displayName + ":" + auth.currentUser.uid,
+    //   room,
+    // });
+
+    socketio.emit("submit", {
+        text: newMessage,
+        createdAt: serverTimestamp(),
+        user: auth.currentUser.uid,
+        userName: auth.currentUser.displayName,
+        fullUser: auth.currentUser,
+        room,
+      })
 
     setNewMessage("");
   };
@@ -52,7 +63,7 @@ export const Chat = ({ room }) => {
   return (
     <div className="chat-app">
       <div className="header">
-        <h1>Welcome to: {room.toUpperCase()}</h1>
+        <h1>Welcome to {room || "Game"} Lobby</h1>
       </div>
       <div className="messages">
         {messages.map((message) => (
