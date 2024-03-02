@@ -48,8 +48,11 @@ export const Toolbar = (room, isAutoProceeding) => {
     socketio.emit("startRoundTimer", {
         createdAt: serverTimestamp(),
         userUid: auth.currentUser.uid,
+        roomId: room,
         room,
       })
+
+    socketio.emit("startRoundTimer", room)
   };
 
   return (

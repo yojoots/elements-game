@@ -49,6 +49,7 @@ export const Chat = ({ room }) => {
 
   if (!isJoined) {
     socketio.emit("startRoom", {
+      userUid: auth.currentUser.uid,
       roomId: room,
       room,
     })
@@ -83,6 +84,15 @@ export const Chat = ({ room }) => {
     // function onFooEvent(value) {
     //   setFooEvents(previous => [...previous, value]);
     // }
+    //socketio.connect();
+    //socketio.join(room)
+
+    //socketio.connect({ query: `userId=${auth.currentUser.uid}` });
+
+    socketio.on("connection", (socket) => {
+      console.log("SOCK CONNECT", room);
+      socket.join(room);
+    });
 
     function onNewMessage(value) {
       console.log("GOT NEW MESSAGE");
@@ -90,10 +100,12 @@ export const Chat = ({ room }) => {
     }
 
     function onAutoProceed() {
+      console.log("autoProceeding NOW");
       setIsAutoProceeding(true);
     }
 
     function onNewRound(value) {
+      console.log("ON NEW ROUND:", value);
       setRoundNumber(value.round);
     }
 

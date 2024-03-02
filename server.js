@@ -11,24 +11,24 @@ const io = new Server(server, {
     }
 });
 
-let gameState = {
+const defaultGameState = {
     isStarted: false,
-    roomId: "abcdef",
+    roomId: "default",
     round: 0,
     players: [],
+    maxPlayers: 10,
     potSize: 80.00,
     roundDuration: 30
 };
 
-let gameStates = {
-    "abcdef": {
-        isStarted: false,
-        roomId: "abcdef",
-        round: 0,
-        players: [],
-        potSize: 80.00,
-        roundDuration: 30
-    }
+let knownGameStates = {
+    "default": structuredClone(defaultGameState)
+}
+
+function getRandomString(strLen = 7) {
+    // This only generates a max of 10-11 char alphanumerical strings
+    // (could extend to longer strings by joining multiple such results)
+    return Math.random().toString(36).substring(2, strLen+2);
 }
 
 function arrContains(arr, val) {
@@ -36,48 +36,72 @@ function arrContains(arr, val) {
 }
 
 io.on('connection', (socket) => {
-    socket.join(gameState.roomId);
     socket.on("startRoom", (args) => {
-        console.log("STARTING:", args);
-        socket.join(args.roomId);
+        let roomId = args.roomId ? args.roomId : getRandomString(10);
+        let userUid = args.userUid ? args.userUid : "";
+        if (userUid.length > 0) {
+            socket.join(userUid);
+        }
+        if (!knownGameStates[roomId]) {
+            console.log("CREATING ROOM/TABLE WITH ID:", roomId);
+            // If/once we allow customizing game settings, it'll go here
+            knownGameStates[roomId] = structuredClone(defaultGameState);
+
+            console.log("JOINING ROOM SOCKET WITH ID:", roomId);
+        }
+        socket.join(roomId);
+        socket.to(roomId).emit("foo", "whassup")
+        socket.emit("foo", "whassup")
     });
 
     socket.on("submit", (args) => {
-        if (args.userUid) {
-            let userExists = arrContains(gameState.players, args.userUid);
+        if (!(args.roomId && args.userUid)) {
+            return
+        }
+        let roomId = args.roomId;
+        let userId = args.userUid;
+        let gameState = knownGameStates[roomId];
+        if (gameState === undefined) {
+            return
+        }
+        let userExists = arrContains(gameState.players, userId);
 
-            if (!userExists) {
-                gameState.players.push({
-                    id: args.userUid,
-                    lastSpellCastInRound: 0,
-                    life: 2000,
-                    air: 0,
-                    earth: 0,
-                    fire: 0,
-                    water: 0
-                });
-            }
+        if (!userExists) {
+            // Auto-join for now
+            gameState.players.push({
+                id: userId,
+                lastSpellCastInRound: 0,
+                life: 2000,
+                air: 0,
+                earth: 0,
+                fire: 0,
+                water: 0
+            });
         }
 
-        io.to(args.roomId).emit('foo', {text: args.text, user: args.userName, id: "1245"})
-
-        console.log("UUID:", args.userUid);
-        console.log(`NEW GAME STATE: ${util.inspect(gameState, false, null, true)}`);
-        //socket.to(gameState.roomId).emit("foo", {text: "Hi!!!", user: "no one2", id: "1245", key: "fhfdsa3"})
-        //socket.emit('foo', {text: "Hi!!!", user: "no one2", id: "1245", key: "fhfdsa3"})
-        //io.to(gameState.roomId).emit('foo', {text: "Hi!!!", user: "no one2", id: "1245", key: "fhfdsa3"})
-        io.to(gameState.roomId).emit('newRound', {round: gameState.round})
+        io.to(userId).emit('newRound', {round: gameState.round})
     });
 
-    socket.on("startRoundTimer", () => {
+    socket.on("startRoundTimer", (roomId) => {
+        console.log("SRT", roomId);
+        let gameState = knownGameStates[roomId.room];
+        if (gameState === undefined) {
+            return
+        }
         gameState.isStarted = true;
-        console.log("BEGINNING TIMER:", gameState.roomId);
-        io.to(gameState.roomId).emit('autoProceed')
+        console.log("BEGINNING TIMERz:", roomId.room);
+        io.to(roomId).emit('autoProceed');
+        socket.to(roomId).emit('autoProceed');
     });
 
-    socket.on("nextRound", () => {
+    socket.on("nextRound", (roomId) => {
+        let gameState = knownGameStates[roomId];
+        if (gameState === undefined) {
+            return
+        }
         gameState.round = gameState.round + 1;
-        io.to(gameState.roomId).emit('newRound', {round: gameState.round})
+        console.log(`Manually proceeding to round ${gameState.round} in game ID: ${roomId}`);
+        io.to(roomId).emit('newRound', {round: gameState.round})
     });
 
     socket.on('disconnect', () => {
@@ -86,11 +110,15 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
-    if (gameState.isStarted) {
-        gameState.round = gameState.round + 1;
-        io.to(gameState.roomId).emit('newRound', {round: gameState.round})
+    for (const [roomId, gameState] of Object.entries(knownGameStates)) {
+        if (gameState.isStarted) {
+            gameState.round = gameState.round + 1;
+            console.log(`Ticking and proceedings to round ${gameState.round} in game ID: ${roomId}`);
+            io.to(roomId).emit('newRound', {round: gameState.round});
+            io.sockets.to(roomId).emit('newRound', {round: gameState.round});
+        }
     }
-}, 25000)
+}, 10000)
 
 server.listen(5001, () => {
     console.log('listening on *:5001');
