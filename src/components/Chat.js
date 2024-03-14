@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import socketIOClient from "socket.io-client";
 import { db, auth } from "../firebase-config";
 import {
   collection,
@@ -14,8 +13,7 @@ import { Toolbar } from "./Toolbar";
 
 import "../styles/Chat.css";
 
-export const Chat = ({ room }) => {
-  let socketio  = socketIOClient("http://localhost:5001")
+export const Chat = ({ room, socket }) => {
   const [messages, setMessages] = useState([{text: "Hi", user: "no one", id: "124", key: "fhfdsa"}]);
   const [newMessage, setNewMessage] = useState("");
   const [roundNumber, setRoundNumber] = useState(0);
@@ -48,7 +46,7 @@ export const Chat = ({ room }) => {
   // }
 
   if (!isJoined) {
-    socketio.emit("startRoom", {
+    socket.emit("startRoom", {
       userUid: auth.currentUser.uid,
       roomId: room,
       room,
@@ -67,7 +65,7 @@ export const Chat = ({ room }) => {
     //   room,
     // });
 
-    socketio.emit("submit", {
+    socket.emit("submit", {
         text: newMessage,
         createdAt: serverTimestamp(),
         userUid: auth.currentUser.uid,
@@ -89,14 +87,16 @@ export const Chat = ({ room }) => {
 
     //socketio.connect({ query: `userId=${auth.currentUser.uid}` });
 
-    socketio.on("connection", (socket) => {
+    socket.on("connection", (room) => {
       console.log("SOCK CONNECT", room);
       socket.join(room);
     });
 
     function onNewMessage(value) {
-      console.log("GOT NEW MESSAGE");
-      setMessages(messages => [...messages, value]);
+      console.log("GOT NEW MESSAGE:", value);
+      if (value.room == room) {
+        setMessages(messages => [...messages, value]);
+      }
     }
 
     function onAutoProceed() {
@@ -109,14 +109,14 @@ export const Chat = ({ room }) => {
       setRoundNumber(value.round);
     }
 
-    socketio.on('foo', onNewMessage);
-    socketio.on('newRound', onNewRound);
-    socketio.on('autoProceed', onAutoProceed);
+    socket.on('foo', onNewMessage);
+    socket.on('newRound', onNewRound);
+    socket.on('autoProceed', onAutoProceed);
 
     return () => {
-      socketio.off('foo', onNewMessage);
+      socket.off('foo', onNewMessage);
     };
-  }, []);
+  }, [socket]);
 
 
   return (

@@ -4,8 +4,10 @@ import { Auth } from "./components/Auth";
 import { AppWrapper } from "./components/AppWrapper";
 import Cookies from "universal-cookie";
 import "./App.css";
+import io from 'socket.io-client';
 
 const cookies = new Cookies();
+const socket = io.connect('http://localhost:5001');
 
 function ChatApp() {
   const [isAuth, setIsAuth] = useState(cookies.get("auth-token"));
@@ -50,7 +52,7 @@ function ChatApp() {
         </div>
       ) : (
         <>
-          <Chat room={room} />
+          <Chat room={room} socket={socket} />
         </>
       )}
     </AppWrapper>

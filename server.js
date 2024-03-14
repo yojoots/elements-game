@@ -42,6 +42,9 @@ io.on('connection', (socket) => {
         if (userUid.length > 0) {
             socket.join(userUid);
         }
+        if (roomId.length > 0) {
+            socket.join(roomId);
+        }
         if (!knownGameStates[roomId]) {
             console.log("CREATING ROOM/TABLE WITH ID:", roomId);
             // If/once we allow customizing game settings, it'll go here
@@ -49,18 +52,21 @@ io.on('connection', (socket) => {
 
             console.log("JOINING ROOM SOCKET WITH ID:", roomId);
         }
-        socket.join(roomId);
+        // socket.join(roomId);
         socket.to(roomId).emit("foo", "whassup")
         socket.emit("foo", "whassup")
     });
 
     socket.on("submit", (args) => {
+        console.log("GOT SUBMISSION WITH ARGUS:", args);
+
         if (!(args.roomId && args.userUid)) {
             return
         }
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
+        console.log("GAME STATE:", gameState);
         if (gameState === undefined) {
             return
         }
@@ -78,8 +84,9 @@ io.on('connection', (socket) => {
                 water: 0
             });
         }
-
-        io.to(userId).emit('newRound', {round: gameState.round})
+        //io.to(roomId).emit('newRound', {round: gameState.round})
+        //io.to(userId).emit('foo', {room: roomId, text: args.text, user: userId, id: args.userName + args.text, key: args.userName + args.text})
+        io.to(roomId).emit('foo', {room: roomId, text: args.text, user: userId, id: args.userName + args.text, key: args.userName + args.text})
     });
 
     socket.on("startRoundTimer", (roomId) => {
