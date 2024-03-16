@@ -7,25 +7,31 @@ body {
   display: flex;
   align-items: center;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
+  padding-bottom: 10px;
   flex-direction: column;
   font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #00011d1f;
 }
 
 .app-header {
   text-align: center;
-  background-color: #3b5998;
+  background-color: #000e2c;
   color: white;
   width: 100%;
 }
 
 .app-container {
   margin-top: 50px;
+  width: 100%;
 }
 
 .room {
   display: flex;
   flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
 }
 
 .room label {
@@ -53,7 +59,7 @@ body {
   font-size: 20px;
   text-align: center;
   margin: 5px;
-  background-color: #3b5998;
+  background-color: #000e2c;
   color: white;
   cursor: pointer;
 }

@@ -89,22 +89,78 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('foo', {room: roomId, text: args.text, user: userId, id: args.userName + args.text, key: args.userName + args.text})
     });
 
-    socket.on("startRoundTimer", (roomId) => {
-        console.log("SRT", roomId);
-        let gameState = knownGameStates[roomId.room];
+    socket.on("convert", (args) => {
+        console.log("CONVERT< ARGS::", args);
+
+        if (!(args.roomId && args.userUid)) {
+            return
+        }
+        let roomId = args.roomId;
+        let userId = args.userUid;
+        let gameState = knownGameStates[roomId];
+        console.log("GAME STATE:", gameState);
+        if (gameState === undefined) {
+            // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
+            //return
+            knownGameStates[roomId] = structuredClone(defaultGameState);
+            gameState = knownGameStates[roomId]
+        }
+
+        let userExists = arrContains(gameState.players, userId);
+
+        if (!userExists) {
+            // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
+            //return
+            // Auto-join for now
+            gameState.players.push({
+                id: userId,
+                lastSpellCastInRound: 0,
+                life: 2000,
+                air: 0,
+                earth: 0,
+                fire: 0,
+                water: 0
+            });
+        }
+
+        player = gameState.players.find((p) => {return p.id == userId});
+        if (player.life >= 100) {
+            player.life -= 100;
+            theElement = args.element;
+            player[theElement] += 400;
+            io.to(userId).emit('foo', {room: roomId, text: "JUST CONVERTED SOME " + theElement, user: userId, id: args.userName, key: args.userName})
+        }
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player})
+    });
+
+    socket.on("startRoundTimer", (args) => {
+        console.log("START RT", args.room);
+        let gameState = knownGameStates[args.room];
         if (gameState === undefined) {
             return
         }
         gameState.isStarted = true;
-        console.log("BEGINNING TIMERz:", roomId.room);
-        io.to(roomId).emit('autoProceed');
-        socket.to(roomId).emit('autoProceed');
+        console.log("BEGINNING TIMERz:", args.room);
+        io.to(args.room).emit('autoProceed');
+        socket.to(args.room).emit('autoProceed');
     });
 
-    socket.on("nextRound", (roomId) => {
-        let gameState = knownGameStates[roomId];
+    socket.on("stopRoundTimer", (args) => {
+        console.log("STOP RT", args);
+        let gameState = knownGameStates[args.room];
         if (gameState === undefined) {
             return
+        }
+        gameState.isStarted = false;
+        console.log("STOPPING TIMERz:", args.room);
+    });
+
+    socket.on("nextRound", (args) => {
+        roomId = args.room;
+        let gameState = knownGameStates[roomId];
+        if (gameState === undefined) {
+            knownGameStates[roomId] = structuredClone(defaultGameState);
+            gameState = knownGameStates[roomId]
         }
         gameState.round = gameState.round + 1;
         console.log(`Manually proceeding to round ${gameState.round} in game ID: ${roomId}`);

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Modal from 'react-modal';
-import socketIOClient from "socket.io-client";
 import { auth } from "../firebase-config";
 import {serverTimestamp} from "firebase/firestore";
 
@@ -14,10 +13,10 @@ const customStyles = {
       transform: 'translate(-50%, -50%)',
     },
   };
-export const Toolbar = (room, isAutoProceeding) => {
-  let socketio  = socketIOClient("http://localhost:5001")
+export const Toolbar = ({ room, socket }) => {
   let subtitle;
   const [modalIsOpen, setIsOpen] = useState(false);
+  const [isAutoProceed, setIsAutoProceed] = useState(false);
 
   function openModal() {
     setIsOpen(true);
@@ -35,32 +34,53 @@ export const Toolbar = (room, isAutoProceeding) => {
   const handleRoundIncrement = async (event) => {
     event.preventDefault();
 
-    socketio.emit("nextRound", {
+    setIsAutoProceed(true);
+    console.log("TRYING TO INCREMENT");
+
+    socket.emit("nextRound", {
         createdAt: serverTimestamp(),
         userUid: auth.currentUser.uid,
-        room,
+        roomId: room,
+        room
       })
   };
 
   const beginAutoProceeding = async (event) => {
     event.preventDefault();
+    setIsAutoProceed(true);
 
-    socketio.emit("startRoundTimer", {
-        createdAt: serverTimestamp(),
-        userUid: auth.currentUser.uid,
-        roomId: room,
-        room,
-      })
+    // socket.emit("startRoundTimer", {
+    //     createdAt: serverTimestamp(),
+    //     userUid: auth.currentUser.uid,
+    //     roomId: room,
+    //     room
+    //   });
 
-    socketio.emit("startRoundTimer", room)
+    socket.emit("startRoundTimer", room)
+  };
+
+
+  const stopAutoProceeding = async (event) => {
+    event.preventDefault();
+    setIsAutoProceed(false);
+
+    // socket.emit("stopRoundTimer", {
+    //     createdAt: serverTimestamp(),
+    //     userUid: auth.currentUser.uid,
+    //     roomId: room,
+    //     room
+    //   });
+
+    socket.emit("stopRoundTimer", room)
   };
 
   return (
     <>
       <div className="centered"><button onClick={openModal}>Convert</button></div>
-      { !isAutoProceeding ?
-        (<div className="centered"><button onClick={handleRoundIncrement}>Next Roundz</button></div> ) :
-        (<div className="centered"><button onClick={beginAutoProceeding}>Start</button></div> )}
+      { isAutoProceed ?
+        (<div className="centered"><button onClick={stopAutoProceeding}>Stop</button></div> ) :
+        (<div className="centered"><button onClick={beginAutoProceeding}>Start</button></div> ) }
+      {<div className="centered"><button onClick={handleRoundIncrement}>Next Roundz</button></div> }
       <Modal
         isOpen={modalIsOpen}
         onAfterOpen={afterOpenModal}

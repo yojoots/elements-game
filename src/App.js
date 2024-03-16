@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Chat } from "./components/Chat";
+import { Dashboard } from "./components/Dashboard";
+import { Toolbar } from "./components/Toolbar";
 import { Auth } from "./components/Auth";
 import { AppWrapper } from "./components/AppWrapper";
 import Cookies from "universal-cookie";
 import "./App.css";
 import io from 'socket.io-client';
+import { auth } from "./firebase-config";
 
 const cookies = new Cookies();
 const socket = io.connect('http://localhost:5001');
@@ -51,9 +53,12 @@ function ChatApp() {
           </button>
         </div>
       ) : (
+        auth.currentUser != null ?
         <>
-          <Chat room={room} socket={socket} />
-        </>
+          <Dashboard room={room} socket={socket} currentUser={auth.currentUser} />
+          <Toolbar room={room} socket={socket} />
+        </> :
+          <Auth setIsAuth={setIsAuth} />
       )}
     </AppWrapper>
   );
