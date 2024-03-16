@@ -56,7 +56,7 @@ export const Toolbar = ({ room, socket }) => {
     //     room
     //   });
 
-    socket.emit("startRoundTimer", room)
+    socket.emit("startRoundTimer", {room: room})
   };
 
 
@@ -71,7 +71,7 @@ export const Toolbar = ({ room, socket }) => {
     //     room
     //   });
 
-    socket.emit("stopRoundTimer", room)
+    socket.emit("stopRoundTimer", {room: room})
   };
 
   return (

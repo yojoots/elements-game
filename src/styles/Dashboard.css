@@ -38,6 +38,13 @@
     margin-bottom: 10px;
   }
 
+  .attack-and-defense {
+    position: absolute;
+    right: 80px;
+    margin-top: 10px;
+    font-size: 20px;
+  }
+
   .weather {
     text-align: right;
     margin-top: -40px;
@@ -64,8 +71,9 @@
     flex-grow: 1;
     margin-top: 10px;
     margin-bottom: 10px;
+  }
 
-    div {
+  .element-buttons div {
       flex: 1;
       text-align: center;
       align-items: center;
@@ -73,7 +81,7 @@
       margin-bottom: 10px;
     }
 
-    button {
+  .element-buttons button {
       width: 50px;
       font-size: 30px;
       border-radius: 50%;
@@ -82,12 +90,11 @@
       border: 1px solid black;
       cursor: pointer;
     }
-  }
  
   .user {
     font-weight: bold;
     margin-right: 10px;
-    color: #333;
+    /*color: #333;*/
   }
   
   .new-message-form {
@@ -118,4 +125,27 @@
     margin-right: 4px;
     margin-bottom: -6px;
     padding: 10px;
+  }
+
+  .new-nickname {
+    position: absolute;
+    right: 200px;
+  }
+
+  .new-nickname-input {
+    width: 110px;
+    outline: none;
+    background: transparent;
+    border: 1px dashed #7f7fbf;
+    border-radius: 3px;
+    margin-top: 2px;
+    padding: 5px;
+    margin-right: 3px;
+  }
+
+  #trollbox {
+    width: 100%;
+    padding-top: 1em;
+    padding-left: 1em;
+    border-top: 1px dashed black;
   }
