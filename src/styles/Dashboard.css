@@ -90,6 +90,10 @@
       border: 1px solid black;
       cursor: pointer;
     }
+
+  h4 {
+    margin-bottom: 5px;
+  }
  
   .user {
     font-weight: bold;

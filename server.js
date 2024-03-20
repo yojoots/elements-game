@@ -27,7 +27,8 @@ const initPlayer = (userId) => {
         fire: 0,
         water: 0,
         empower: 0,
-        fortify: 0
+        fortify: 0,
+        winnings: 20.00
     }
 }
 
@@ -36,6 +37,11 @@ const initGame = (roomId) => {
         isTicking: false,
         roomId: roomId,
         round: 0,
+        roundCount: 5,
+        airPrice: 0.25,
+        earthPrice: 0.25,
+        firePrice: 0.25,
+        waterPrice: 0.25,
         players: [],
         maxPlayers: 10,
         potSize: 80.00,
@@ -44,20 +50,7 @@ const initGame = (roomId) => {
     }
 }
 
-const defaultGameState = {
-    isTicking: false,
-    roomId: "default",
-    round: 0,
-    players: [],
-    maxPlayers: 10,
-    potSize: 80.00,
-    roundCount: 20,
-    roundDuration: 30
-};
-
-let knownGameStates = {
-    "default": structuredClone(defaultGameState)
-}
+let knownGameStates = {}
 
 const stringToColour = (str) => {
     let hash = 0;
@@ -135,9 +128,6 @@ io.on('connection', (socket) => {
 
             console.log("JOINING ROOM SOCKET WITH ID:", roomId);
         }
-        // socket.join(roomId);
-        // socket.to(roomId).emit("foo", "whassup")
-        // socket.emit("foo", "whassup")
     });
 
     socket.on("submit", (args) => {
@@ -149,7 +139,6 @@ io.on('connection', (socket) => {
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
-        console.log("GAME STATE:", gameState);
         if (gameState === undefined) {
             return
         }
@@ -169,30 +158,27 @@ io.on('connection', (socket) => {
         if (args.text.startsWith("/attack")) {
             let playerToAttack = args.text.split(" ")[1];
             player.attacking = playerToAttack;
+            return;
         }
 
         if (args.text.startsWith("/order")) {
             let newOrder = args.text.split(" ")[1];
             player.order = newOrder;
+            return;
         }
 
-        //io.to(roomId).emit('newRound', {round: gameState.round})
-        //io.to(userId).emit('foo', {room: roomId, text: args.text, user: userId, id: args.userName + args.text, key: args.userName + args.text})
         let timeString = new Date().getTime().toString();
         let argsHash = hashCode(JSON.stringify(args) + timeString);
         io.to(roomId).emit('newMessage', {room: roomId, text: args.text, user: player.nickname, color: player.color, id: argsHash, key: argsHash})
     });
 
     socket.on("updateNickname", (args) => {
-        console.log("GOT NICKNAME WITH ARGUS:", args);
-
         if (!(args.roomId && args.userUid)) {
             return
         }
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
-        console.log("GAME STATE:", gameState);
         if (gameState === undefined) {
             return
         }
@@ -210,7 +196,6 @@ io.on('connection', (socket) => {
 
         player.nickname = args.nickname;
 
-        //io.to(roomId).emit('setNickname', {room: roomId, nickname: player.nickname, user: userId})
         saveGameState(gameState);
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
     });
@@ -260,15 +245,13 @@ io.on('connection', (socket) => {
     });
 
     socket.on("convert", (args) => {
-        console.log("CONVERT: ARGS::", args);
-
         if (!(args.roomId && args.userUid)) {
             return
         }
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
-        console.log("GAME STATE:", gameState);
+        console.log("GAME STATE b4 convert:", gameState);
         if (gameState === undefined) {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
@@ -294,9 +277,18 @@ io.on('connection', (socket) => {
         if (player.life >= 100) {
             player.life -= 100;
             theElement = args.element;
-            player[theElement] += 400;
-            // io.to(userId).emit('foo', {room: roomId, text: "JUST CONVERTED SOME " + theElement, user: userId, id: args.userName, key: args.userName})
+            if (theElement === "air") {
+                player[theElement] += (100 / gameState.airPrice)
+            } else if (theElement === "earth") {
+                player[theElement] += (100 / gameState.earthPrice)
+            } else if (theElement === "fire") {
+                player[theElement] += (100 / gameState.firePrice)
+            } else if (theElement === "water") {
+                player[theElement] += (100 / gameState.waterPrice)
+            }
         }
+        console.log("GAME STATE after convert:", gameState);
+
         saveGameState(gameState);
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
     });
@@ -310,7 +302,7 @@ io.on('connection', (socket) => {
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
-        console.log("GAME STATE:", gameState);
+        console.log("GAME STATE before spell:", gameState);
         if (gameState === undefined) {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
@@ -378,6 +370,7 @@ io.on('connection', (socket) => {
             console.log("Ignoring spell: ", theSpell)
         }
 
+        console.log("GAME STATE after spell:", gameState);
         saveGameState(gameState);
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player})
     });
@@ -538,6 +531,21 @@ function generateWeather() {
     return weather
 }
 
+function generateMarket() {
+    let rawAirRNG = getRandomInt(100);
+    let rawEarthRNG = getRandomInt(100);
+    let rawFireRNG = getRandomInt(100);
+    let rawWaterRNG = getRandomInt(100);
+    let rawTotal = rawAirRNG + rawEarthRNG + rawFireRNG + rawWaterRNG;
+
+    return {
+        airPrice: rawAirRNG / rawTotal,
+        earthPrice: rawEarthRNG / rawTotal,
+        firePrice: rawFireRNG / rawTotal,
+        waterPrice: rawWaterRNG / rawTotal
+    }
+}
+
 function topTroops(player, attackingOrDefending) {
     // Prioritize empower and fortify buffs first
     if (attackingOrDefending == "attack" && player.empower > 0) {
@@ -621,11 +629,26 @@ function processRoundAndProceed(roomId) {
     gameState.weather = generateWeather();
 
     if (gameState.round >= gameState.roundCount) {
-        io.to(roomId).emit('gameResults', {game: gameState});
+        gameState.airPrice = 0.25
+        gameState.earthPrice = 0.25
+        gameState.firePrice = 0.25
+        gameState.waterPrice = 0.25
+        io.to(roomId).emit('gameResults', gameState);
         return
     } else {
+        let newPrices = generateMarket();
+        gameState.airPrice = newPrices.airPrice;
+        gameState.earthPrice = newPrices.earthPrice;
+        gameState.firePrice = newPrices.firePrice;
+        gameState.waterPrice = newPrices.waterPrice;
         gameState.round = gameState.round + 1;
-        io.to(roomId).emit('newRound', {round: gameState.round});
+        io.to(roomId).emit('newRound', {
+            round: gameState.round,
+            airPrice: gameState.airPrice,
+            earthPrice: gameState.earthPrice,
+            firePrice: gameState.firePrice,
+            waterPrice: gameState.waterPrice,
+        });
     }
 }
 

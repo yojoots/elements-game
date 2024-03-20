@@ -12,7 +12,13 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [nickname, setNickname] = useState("");
   const [roundNumber, setRoundNumber] = useState(0);
   const [isJoined, setIsJoined] = useState(false);
+  const [gameIsOver, setGameIsOver] = useState(false);
   const [roundWeather, setRoundWeather] = useState("Clear");
+  const [airPrice, setAirPrice] = useState(0.25);
+  const [earthPrice, setEarthPrice] = useState(0.25);
+  const [firePrice, setFirePrice] = useState(0.25);
+  const [waterPrice, setWaterPrice] = useState(0.25);
+  const [finalWinnings, setFinalWinnings] = useState(0.00);
   const [lifeScore, setLifeScore] = useState(2000);
   const [airScore, setAirScore] = useState(0);
   const [earthScore, setEarthScore] = useState(0);
@@ -49,6 +55,11 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   // function onGameStateChange(value) {
   //   setMessages(messages => [...messages, value]);
   // }
+
+  let USDollar = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  });
 
   if (!isJoined) {
     socket.emit("startRoom", {
@@ -121,14 +132,28 @@ export const Dashboard = ({ room, socket, currentUser }) => {
       }
     }
 
+    const onGameResults = (value) => {
+      console.log("GOT ENDGAME RESULTS:", value);
+      if (value.roomId === room) {
+        let player = value.players.find((p) => {return p.id == currentUser.uid});
+        console.log("FINALIZING PLAYER:", player);
+        setFinalWinnings(player.winnings);
+        setGameIsOver(true);
+      }
+    }
+
     function onNewRound(value) {
-      console.log("SETTING ROUND:", value.round);
       setRoundNumber(value.round);
+      setAirPrice(value.airPrice);
+      setEarthPrice(value.earthPrice);
+      setFirePrice(value.firePrice);
+      setWaterPrice(value.waterPrice);
     }
 
     socket.on('newMessage', onNewMessage);
     socket.on('playerState', onPlayerState);
     socket.on('newRound', onNewRound);
+    socket.on('gameResults', onGameResults);
 
     return () => {
       socket.off('newMessage', onNewMessage);
@@ -162,6 +187,30 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     setCanCastSpell(lastSpellCastInRound < roundNumber);
   }, [roundNumber, lastSpellCastInRound])
 
+  if (gameIsOver) {
+    return (
+      <div className="dashboard-app">
+        <div className="header">
+          <h1>Game: {room || "Game"}</h1>
+          <h3>Round: {roundNumber} (COMPLETE)</h3>
+        </div>
+        <div className="messages">
+          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small><small> {isJoined ? "🟢" : "🔴"}</small></h3>
+            <div className="life-score">
+              <h4>Final Life Score:</h4>
+              <div className="life-emoji">🌱</div>
+              <div>{Math.round(lifeScore / 100)}</div>
+              <br />
+              <h4>Your Winnings:</h4>
+              <div className="life-emoji">💰</div>
+              <div>{USDollar.format(finalWinnings)}</div>
+              <br />
+            </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="dashboard-app">
@@ -171,7 +220,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
           <div className="weather">Weather: {roundWeather}</div>
         </div>
         <div className="messages">
-          <form onSubmit={handleNicknameChange} className="new-nickname">
+          { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
             <input
               type="text"
               value={nicknameInput}
@@ -182,7 +231,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
             <button type="submit" className="nickname-button">
               Update
             </button>
-          </form>
+          </form> ) }
           <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small><small> {isJoined ? "🟢" : "🔴"}</small></h3>
           <div className="attack-and-defense">
             <div>{Math.round(empowerScore / 100)} ⚔️</div>
@@ -190,24 +239,28 @@ export const Dashboard = ({ room, socket, currentUser }) => {
           </div>
           <div className="life-score">
             <div className="life-emoji">🌱</div>
-            <div>{Math.round(lifeScore / 100)}</div>
+            <div><strong>{Math.round(lifeScore / 100)}</strong></div>
           </div>
           <div className="element-buttons">
             <div>
-              <div>{Math.round(fireScore / 100)}</div>
+              <div><strong>{Math.round(fireScore / 100)}</strong></div>
               <button onClick={(e) => convertLifeTo("fire", e)}>🔥</button>
+              <div><small>{Math.round(firePrice * 100) / 100}</small></div>
             </div>
             <div>
-              <div>{Math.round(waterScore / 100)}</div>
+              <div><strong>{Math.round(waterScore / 100)}</strong></div>
               <button onClick={(e) => convertLifeTo("water", e)}>💧</button>
+              <div><small>{Math.round(waterPrice * 100) / 100}</small></div>
             </div>
             <div>
-              <div>{Math.round(earthScore / 100)}</div>
+              <div><strong>{Math.round(earthScore / 100)}</strong></div>
               <button onClick={(e) => convertLifeTo("earth", e)}>⛰️</button>
+              <div><small>{Math.round(earthPrice * 100) / 100}</small></div>
             </div>
             <div>
-              <div>{Math.round(airScore / 100)}</div>
+              <div><strong>{Math.round(airScore / 100)}</strong></div>
               <button onClick={(e) => convertLifeTo("air", e)}>🌪️</button>
+              <div><small>{Math.round(airPrice * 100) / 100}</small></div>
             </div>
           </div>
           <div className="element-buttons">
