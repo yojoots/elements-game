@@ -12,10 +12,35 @@ const io = new Server(server, {
     }
 });
 
-const initPlayer = (userId) => {
+const nameList = [
+    'Time','Past','Future','Dev',
+    'Fly','Flying','Soar','Soaring','Power','Falling',
+    'Fall','Jump','Cliff','Mountain','Rend','Red','Blue',
+    'Green','Yellow','Gold','Demon','Demonic','Panda','Cat',
+    'Kitty','Kitten','Zero','Memory','Trooper','XX','Bandit',
+    'Fear','Light','Glow','Tread','Deep','Deeper','Deepest',
+    'Mine','Your','Worst','Enemy','Hostile','Force','Video',
+    'Game','Donkey','Mule','Colt','Cult','Cultist','Magnum',
+    'Gun','Assault','Recon','Trap','Trapper','Redeem','Code',
+    'Script','Writer','Near','Close','Open','Cube','Circle',
+    'Geo','Genome','Germ','Spaz','Shot','Echo','Beta','Alpha',
+    'Gamma','Omega','Seal','Squid','Money','Cash','Lord','King',
+    'Duke','Rest','Fire','Flame','Morrow','Break','Breaker','Numb',
+    'Ice','Cold','Rotten','Sick','Sickly','Janitor','Camel','Rooster',
+    'Sand','Desert','Dessert','Hurdle','Racer','Eraser','Erase','Big',
+    'Small','Short','Tall','Sith','Bounty','Hunter','Cracked','Broken',
+    'Sad','Happy','Joy','Joyful','Crimson','Destiny','Deceit','Lies',
+    'Lie','Honest','Destined','Bloxxer','Hawk','Eagle','Hawker','Walker',
+    'Zombie','Sarge','Capt','Captain','Punch','One','Two','Uno','Slice',
+    'Slash','Melt','Melted','Melting','Fell','Wolf','Hound',
+    'Legacy','Sharp','Dead','Mew','Chuckle','Bubba','Bubble','Sandwich','Smasher','Extreme','Multi','Universe','Ultimate','Death','Ready','Monkey','Elevator','Wrench','Grease','Head','Theme','Grand','Cool','Kid','Boy','Girl','Vortex','Paradox'
+];
+
+const initPlayer = (userId, playerIndex) => {
     return {
         id: userId,
-        nickname: userId,
+        playerIndex: playerIndex,
+        nickname: nameList[Math.floor( Math.random() * nameList.length )],
         color: stringToColour(userId),
         lastSpellCastInRound: -1,
         isScrying: false,
@@ -44,9 +69,10 @@ const initGame = (roomId) => {
         waterPrice: 0.25,
         players: [],
         maxPlayers: 10,
-        potSize: 80.00,
+        ante: 20.00,
         weather: "clear",
-        roundDuration: 30
+        roundDuration: 30,
+        allMoveHistory: ""
     }
 }
 
@@ -63,6 +89,50 @@ const stringToColour = (str) => {
       colour += value.toString(16).padStart(2, '0')
     }
     return colour
+}
+
+function addPlayerToGame(userId, gameId) {
+    let gameState = knownGameStates[gameId];
+    if (gameState === undefined || !knownGameStates[gameId]) {
+        console.log("CREATING ROOM/TABLE WITH ID:", gameId);
+        // If/once we allow customizing game settings, it'll go here
+        knownGameStates[gameId] = initGame(gameId);
+        gameState = knownGameStates[gameId];
+    }
+    player = gameState.players.find((p) => {return p.id == userId});
+
+    if (player !== undefined) {
+        // Don't try to double-add
+        return;
+    }
+
+    console.log(`ADDING ${userId} to GAME ${gameId}`);
+    let newPlayer = initPlayer(userId, gameState.players.length + 1);
+    gameState.players.push(newPlayer);
+    io.to(userId).emit('playerState', {room: gameId, user: userId, playerState: newPlayer});
+}
+
+function getPlayerByPlayerIndex(gameState, playerIndex) {
+    return gameState.players.find((p) => {return p.playerIndex == playerIndex});
+}
+
+function allocateWinnings(gameState) {
+    let totalPotSize = gameState.ante * gameState.players.length;
+
+    let lifeAndElementGrandTotal = 0;
+    let playerLifeAndElementScores = [];
+
+    for (player of gameState.players) {
+        let playerValue = player.life + ((player.air + player.earth + player.fire + player.water) / 4);
+        playerLifeAndElementScores.push(playerValue);
+        lifeAndElementGrandTotal += playerValue;
+    }
+
+    for (let i = 0; i < gameState.players.length; i++) {
+        let player = gameState.players[i];
+        let playerVal = playerLifeAndElementScores[i];
+        player.winnings = Math.round((playerVal / lifeAndElementGrandTotal) * totalPotSize * 100) / 100;
+    }
 }
 
 function saveGameState(gameState) {
@@ -121,13 +191,7 @@ io.on('connection', (socket) => {
         if (roomId.length > 0) {
             socket.join(roomId);
         }
-        if (!knownGameStates[roomId]) {
-            console.log("CREATING ROOM/TABLE WITH ID:", roomId);
-            // If/once we allow customizing game settings, it'll go here
-            knownGameStates[roomId] = initGame(roomId);
-
-            console.log("JOINING ROOM SOCKET WITH ID:", roomId);
-        }
+        addPlayerToGame(userUid, roomId);
     });
 
     socket.on("submit", (args) => {
@@ -146,7 +210,7 @@ io.on('connection', (socket) => {
 
         if (!userExists && gameState.round === 0) {
             // Auto-join for now (if still in round 0)
-            gameState.players.push(initPlayer(userId));
+            addPlayerToGame(userId, roomId);
         }
 
         player = gameState.players.find((p) => {return p.id == userId});
@@ -157,7 +221,7 @@ io.on('connection', (socket) => {
 
         if (args.text.startsWith("/attack")) {
             let playerToAttack = args.text.split(" ")[1];
-            player.attacking = playerToAttack;
+            player.attacking = parseInt(playerToAttack);
             return;
         }
 
@@ -186,7 +250,7 @@ io.on('connection', (socket) => {
 
         if (!userExists && gameState.round === 0) {
             // Auto-join for now
-            gameState.players.push(initPlayer(userId));
+            addPlayerToGame(userId, roomId);
         }
         player = gameState.players.find((p) => {return p.id == userId});
 
@@ -201,8 +265,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on("updateOrder", (args) => {
-        console.log("GOT REORDER WITH ARGUS:", args);
-
         if (!args.order) {
             return
         }
@@ -221,7 +283,6 @@ io.on('connection', (socket) => {
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
-        console.log("GAME STATE:", gameState);
         if (gameState === undefined) {
             return
         }
@@ -229,7 +290,7 @@ io.on('connection', (socket) => {
 
         if (!userExists && gameState.round === 0) {
             // Auto-join for now
-            gameState.players.push(initPlayer(userId));
+            addPlayerToGame(userId, roomId);
         }
         player = gameState.players.find((p) => {return p.id == userId});
 
@@ -239,7 +300,8 @@ io.on('connection', (socket) => {
 
         player.order = args.order;
 
-        //io.to(roomId).emit('setNickname', {room: roomId, nickname: player.nickname, user: userId})
+        gameState.allMoveHistory += `[P${player.playerIndex}:reorder(${args.order})]`;
+
         saveGameState(gameState);
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
     });
@@ -251,7 +313,6 @@ io.on('connection', (socket) => {
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
-        console.log("GAME STATE b4 convert:", gameState);
         if (gameState === undefined) {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
@@ -265,7 +326,7 @@ io.on('connection', (socket) => {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
             // Auto-join for now
-            gameState.players.push(initPlayer(userId));
+            addPlayerToGame(userId, roomId);
         }
 
         player = gameState.players.find((p) => {return p.id == userId});
@@ -287,22 +348,20 @@ io.on('connection', (socket) => {
                 player[theElement] += (100 / gameState.waterPrice)
             }
         }
-        console.log("GAME STATE after convert:", gameState);
+
+        gameState.allMoveHistory += `[P${player.playerIndex}:convert(${args.element})]`;
 
         saveGameState(gameState);
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
     });
 
     socket.on("castSpell", (args) => {
-        console.log("CAST SPELL: ARGS::", args);
-
         if (!(args.roomId && args.userUid)) {
             return
         }
         let roomId = args.roomId;
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
-        console.log("GAME STATE before spell:", gameState);
         if (gameState === undefined) {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
@@ -316,7 +375,7 @@ io.on('connection', (socket) => {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
             // Auto-join for now
-            gameState.players.push(initPlayer(userId));
+            addPlayerToGame(usedrId, roomId);
         }
 
         player = gameState.players.find((p) => {return p.id == userId});
@@ -370,7 +429,8 @@ io.on('connection', (socket) => {
             console.log("Ignoring spell: ", theSpell)
         }
 
-        console.log("GAME STATE after spell:", gameState);
+        gameState.allMoveHistory += `[P${player.playerIndex}:spell(${args.spell})]`;
+
         saveGameState(gameState);
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player})
     });
@@ -382,19 +442,18 @@ io.on('connection', (socket) => {
             return
         }
         gameState.isTicking = true;
-        console.log("BEGINNING TIMERz:", args.room);
+        console.log("BEGINNING TIMER:", args.room);
         io.to(args.room).emit('autoProceed');
         socket.to(args.room).emit('autoProceed');
     });
 
     socket.on("stopRoundTimer", (args) => {
-        console.log("STOP RT", args);
         let gameState = knownGameStates[args.room];
         if (gameState === undefined) {
             return
         }
         gameState.isTicking = false;
-        console.log("STOPPING TIMERz:", args.room);
+        console.log("STOPPED TIMER:", args.room);
     });
 
     socket.on("nextRound", (args) => {
@@ -569,9 +628,21 @@ function topTroops(player, attackingOrDefending) {
 }
 
 function processRoundAndProceed(roomId) {
-    console.log("PROCESSING ROUND AND PROCEEDING FOR:", roomId);
     gameState = knownGameStates[roomId];
 
+    if (gameState.round >= gameState.roundCount) {
+        console.log(`Game ${roomId} complete; balancing market and allocating winnings`);
+        gameState.isTicking = false;
+        gameState.airPrice = 0.25
+        gameState.earthPrice = 0.25
+        gameState.firePrice = 0.25
+        gameState.waterPrice = 0.25
+        allocateWinnings(gameState);
+        io.to(roomId).emit('gameResults', gameState);
+        return;
+    }
+
+    console.log(`Game ${roomId} PROCESSING ROUND ${gameState.round} AND PROCEEDING`);
     let playerTurns = [...Array(gameState.players.length).keys()];
     shuffle(playerTurns);
     console.log("PLAYER TURNS:", playerTurns);
@@ -580,14 +651,17 @@ function processRoundAndProceed(roomId) {
         playingPlayer = gameState.players[turn];
         console.log("TURN", turn);
         console.log("PLAYING PLAYER:", playingPlayer);
-        if (playingPlayer.attacking.length > 0) {
-            let defendingPlayer = gameState.players[parseInt(playingPlayer.attacking)];
+        if (playingPlayer.attacking > 0) {
+            let defendingPlayer = getPlayerByPlayerIndex(gameState, playingPlayer.attacking);
             if (defendingPlayer.id === playingPlayer.id) {
                 // Can't attack yourself, silly
-                return;
+                continue;
             }
+
+            gameState.allMoveHistory += `[P${player.playerIndex}:attack(${playingPlayer.attacking})]`;
+
             // Execute attack
-            console.log("ATTACKING THE DEFENDER:", defendingPlayer);
+            console.log(`Player ${playingPlayer.playerIndex} (${playingPlayer.nickname}) ATTACKING THE DEFENDER: ${defendingPlayer.playerIndex} (${defendingPlayer.nickname})`);
             let attackingStrengthAndType = topTroops(playingPlayer, "attack");
             let defendingStrengthAndType = topTroops(defendingPlayer, "defend");
             while (attackingStrengthAndType.amount > 0 && defendingStrengthAndType.amount > 0) {
@@ -627,29 +701,21 @@ function processRoundAndProceed(roomId) {
     }
 
     gameState.weather = generateWeather();
-
-    if (gameState.round >= gameState.roundCount) {
-        gameState.airPrice = 0.25
-        gameState.earthPrice = 0.25
-        gameState.firePrice = 0.25
-        gameState.waterPrice = 0.25
-        io.to(roomId).emit('gameResults', gameState);
-        return
-    } else {
-        let newPrices = generateMarket();
-        gameState.airPrice = newPrices.airPrice;
-        gameState.earthPrice = newPrices.earthPrice;
-        gameState.firePrice = newPrices.firePrice;
-        gameState.waterPrice = newPrices.waterPrice;
-        gameState.round = gameState.round + 1;
-        io.to(roomId).emit('newRound', {
-            round: gameState.round,
-            airPrice: gameState.airPrice,
-            earthPrice: gameState.earthPrice,
-            firePrice: gameState.firePrice,
-            waterPrice: gameState.waterPrice,
-        });
-    }
+    let newPrices = generateMarket();
+    gameState.airPrice = newPrices.airPrice;
+    gameState.earthPrice = newPrices.earthPrice;
+    gameState.firePrice = newPrices.firePrice;
+    gameState.waterPrice = newPrices.waterPrice;
+    gameState.round = gameState.round + 1;
+    saveGameState(gameState);
+    io.to(roomId).emit('newRound', {
+        round: gameState.round,
+        weather: gameState.weather,
+        airPrice: gameState.airPrice,
+        earthPrice: gameState.earthPrice,
+        firePrice: gameState.firePrice,
+        waterPrice: gameState.waterPrice,
+    });
 }
 
 setInterval(() => {

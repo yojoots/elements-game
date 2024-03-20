@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Draggable } from "../lib";
 import {
   serverTimestamp,
 } from "firebase/firestore";
@@ -9,11 +10,12 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [nicknameInput, setNicknameInput] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [nickname, setNickname] = useState("Nickname");
   const [roundNumber, setRoundNumber] = useState(0);
   const [isJoined, setIsJoined] = useState(false);
   const [gameIsOver, setGameIsOver] = useState(false);
   const [roundWeather, setRoundWeather] = useState("Clear");
+  const [elementOrder, setElementOrder] = useState("aefw");
   const [airPrice, setAirPrice] = useState(0.25);
   const [earthPrice, setEarthPrice] = useState(0.25);
   const [firePrice, setFirePrice] = useState(0.25);
@@ -144,6 +146,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
 
     function onNewRound(value) {
       setRoundNumber(value.round);
+      setRoundWeather(value.weather);
       setAirPrice(value.airPrice);
       setEarthPrice(value.earthPrice);
       setFirePrice(value.firePrice);
@@ -180,6 +183,32 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         roomId: room,
         spell: spellToCast
       });
+  };
+
+  const reorderElements = (orderDivs) => {
+    let newOrder = "";
+
+    for (let i = 0; i < 4; i++) {
+      let thisLetter = orderDivs[i].props["data-elch"];
+      if (thisLetter !== "a" && thisLetter !== "e" && thisLetter !== "f" && thisLetter !== "w") {
+        return;
+      }
+      if (newOrder.indexOf(thisLetter) >= 0) {
+        return;
+      }
+      newOrder += thisLetter;
+    }
+
+    console.log("NEW ORDER:", newOrder);
+    socket.emit("updateOrder", {
+      order: newOrder,
+      createdAt: serverTimestamp(),
+      userUid: currentUser.uid,
+      userName: currentUser.displayName,
+      roomId: room
+    });
+
+    setElementOrder(newOrder);
   };
 
   // Update canCastSpell according to round # and last spell cast round
@@ -232,7 +261,24 @@ export const Dashboard = ({ room, socket, currentUser }) => {
               Update
             </button>
           </form> ) }
-          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small><small> {isJoined ? "🟢" : "🔴"}</small></h3>
+          <div className="element-orders">
+            <small>Battle Order:</small>
+              <Draggable onPosChangeTwo={reorderElements}>
+                <div id="airOrderDiv" className="orderQ" data-elch={"a"}>
+                  <span>🌪️</span>
+                </div>
+                <div id="earthOrderDiv" className="orderQ" data-elch={"e"}>
+                  <span>⛰️</span>
+                </div>
+                <div id="fireOrderDiv" className="orderQ" data-elch={"f"}>
+                  <span>🔥</span>
+                </div>
+                <div id="waterOrderDiv" className="orderQ" data-elch={"w"}>
+                  <span>💧</span>
+                </div>
+              </Draggable>
+          </div>
+          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small></h3>
           <div className="attack-and-defense">
             <div>{Math.round(empowerScore / 100)} ⚔️</div>
             <div>{Math.round(fortifyScore / 100)} 🛡️</div>
@@ -243,6 +289,16 @@ export const Dashboard = ({ room, socket, currentUser }) => {
           </div>
           <div className="element-buttons">
             <div>
+              <div><strong>{Math.round(airScore / 100)}</strong></div>
+              <button onClick={(e) => convertLifeTo("air", e)}>🌪️</button>
+              <div><small>{Math.round(airPrice * 100) / 100}</small></div>
+            </div>
+            <div>
+              <div><strong>{Math.round(earthScore / 100)}</strong></div>
+              <button onClick={(e) => convertLifeTo("earth", e)}>⛰️</button>
+              <div><small>{Math.round(earthPrice * 100) / 100}</small></div>
+            </div>
+            <div>
               <div><strong>{Math.round(fireScore / 100)}</strong></div>
               <button onClick={(e) => convertLifeTo("fire", e)}>🔥</button>
               <div><small>{Math.round(firePrice * 100) / 100}</small></div>
@@ -251,16 +307,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
               <div><strong>{Math.round(waterScore / 100)}</strong></div>
               <button onClick={(e) => convertLifeTo("water", e)}>💧</button>
               <div><small>{Math.round(waterPrice * 100) / 100}</small></div>
-            </div>
-            <div>
-              <div><strong>{Math.round(earthScore / 100)}</strong></div>
-              <button onClick={(e) => convertLifeTo("earth", e)}>⛰️</button>
-              <div><small>{Math.round(earthPrice * 100) / 100}</small></div>
-            </div>
-            <div>
-              <div><strong>{Math.round(airScore / 100)}</strong></div>
-              <button onClick={(e) => convertLifeTo("air", e)}>🌪️</button>
-              <div><small>{Math.round(airPrice * 100) / 100}</small></div>
             </div>
           </div>
           <div className="element-buttons">

@@ -80,7 +80,7 @@ export const Toolbar = ({ room, socket }) => {
       { isAutoProceed ?
         (<div className="centered"><button onClick={stopAutoProceeding}>Stop</button></div> ) :
         (<div className="centered"><button onClick={beginAutoProceeding}>Start</button></div> ) }
-      {<div className="centered"><button onClick={handleRoundIncrement}>Next Roundz</button></div> }
+      {<div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
       <Modal
         isOpen={modalIsOpen}
         onAfterOpen={afterOpenModal}
