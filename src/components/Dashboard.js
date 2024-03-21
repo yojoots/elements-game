@@ -15,6 +15,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [isJoined, setIsJoined] = useState(false);
   const [gameIsOver, setGameIsOver] = useState(false);
   const [roundWeather, setRoundWeather] = useState("Clear");
+  const [neighborhood, setNeighborhood] = useState([]);
+  const [attacking, setAttacking] = useState(0);
   const [elementOrder, setElementOrder] = useState("aefw");
   const [airPrice, setAirPrice] = useState(0.25);
   const [earthPrice, setEarthPrice] = useState(0.25);
@@ -107,6 +109,30 @@ export const Dashboard = ({ room, socket, currentUser }) => {
 
   };
 
+
+  const queueAttack = async (event, targetPlayerIndex) => {
+    //event.preventDefault();
+    if (targetPlayerIndex < 0) return;
+
+    if (event.target.classList.contains("queued")) return;
+
+    socket.emit("queueAttack", {
+        targetPlayerIndex: targetPlayerIndex,
+        createdAt: serverTimestamp(),
+        userUid: currentUser.uid,
+        roomId: room
+      })
+
+    // let allQueuedAttacks = document.querySelectorAll(".queued");
+    // for (let queuedAttack of allQueuedAttacks) {
+    //   queuedAttack.classList.remove("queued");
+    // }
+
+    setAttacking(targetPlayerIndex);
+
+    //event.target.classList.toggle("queued");
+  };
+
   useEffect(() => {
     socket.on("connection", (room) => {
       socket.join(room);
@@ -114,7 +140,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
 
     function onNewMessage(value) {
       console.log("GOT NEW MESSAGE:", value);
-      if (value.room == room) {
+      if (value.room === room) {
         setMessages(messages => [...messages, value]);
       }
     }
@@ -130,6 +156,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         setLifeScore(value.playerState.life);
         setFortifyScore(value.playerState.fortify);
         setEmpowerScore(value.playerState.empower);
+        setNeighborhood(value.playerState.neighborhood);
+        setAttacking(value.playerState.attacking);
         setLastSpellCastInRound(value.playerState.lastSpellCastInRound);
       }
     }
@@ -137,7 +165,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     const onGameResults = (value) => {
       console.log("GOT ENDGAME RESULTS:", value);
       if (value.roomId === room) {
-        let player = value.players.find((p) => {return p.id == currentUser.uid});
+        let player = value.players.find((p) => {return p.id === currentUser.uid});
         console.log("FINALIZING PLAYER:", player);
         setFinalWinnings(player.winnings);
         setGameIsOver(true);
@@ -151,6 +179,11 @@ export const Dashboard = ({ room, socket, currentUser }) => {
       setEarthPrice(value.earthPrice);
       setFirePrice(value.firePrice);
       setWaterPrice(value.waterPrice);
+      let allQueuedAttacks = document.querySelectorAll(".queued");
+      for (let queuedAttack of allQueuedAttacks) {
+        queuedAttack.classList.remove("queued");
+      }
+      setAttacking(0);
     }
 
     socket.on('newMessage', onNewMessage);
@@ -161,7 +194,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     return () => {
       socket.off('newMessage', onNewMessage);
     };
-  }, [socket]);
+  }, [socket, currentUser.uid, room]);
 
   const convertLifeTo = async (elementToGet, event) => {
     event.preventDefault();
@@ -261,14 +294,14 @@ export const Dashboard = ({ room, socket, currentUser }) => {
               Update
             </button>
           </form> ) }
-          <div className="element-orders">
+          <div className="element-orders" title={elementOrder}>
             <small>Battle Order:</small>
               <Draggable onPosChangeTwo={reorderElements}>
                 <div id="airOrderDiv" className="orderQ" data-elch={"a"}>
-                  <span>🌪️</span>
+                  <span>💨</span>
                 </div>
                 <div id="earthOrderDiv" className="orderQ" data-elch={"e"}>
-                  <span>⛰️</span>
+                  <span className="earth">⛰️</span>
                 </div>
                 <div id="fireOrderDiv" className="orderQ" data-elch={"f"}>
                   <span>🔥</span>
@@ -290,12 +323,12 @@ export const Dashboard = ({ room, socket, currentUser }) => {
           <div className="element-buttons">
             <div>
               <div><strong>{Math.round(airScore / 100)}</strong></div>
-              <button onClick={(e) => convertLifeTo("air", e)}>🌪️</button>
+              <button onClick={(e) => convertLifeTo("air", e)}>💨</button>
               <div><small>{Math.round(airPrice * 100) / 100}</small></div>
             </div>
             <div>
               <div><strong>{Math.round(earthScore / 100)}</strong></div>
-              <button onClick={(e) => convertLifeTo("earth", e)}>⛰️</button>
+              <button className={"earth"} onClick={(e) => convertLifeTo("earth", e)}>⛰️</button>
               <div><small>{Math.round(earthPrice * 100) / 100}</small></div>
             </div>
             <div>
@@ -333,6 +366,22 @@ export const Dashboard = ({ room, socket, currentUser }) => {
                 <div className={canCastSpell ? "text-black" : "text-gray"}>Seed</div>
                 <button disabled={!canCastSpell} onClick={(e) => castSpell("seed", e)}>🌿</button>
               </div>
+            }
+          </div>
+          <div className="neighborhood-buttons">
+            { neighborhood.length > 0 &&
+            (
+              <span>Attack:</span>
+            )}
+            { neighborhood.length > 0 &&
+              (neighborhood.map((neighbor) => {
+                return (
+                  <div key={neighbor.playerIndex} onClick={(e) => queueAttack(e, neighbor.playerIndex)} className={attacking === neighbor.playerIndex ? "flex-item queued" : "flex-item attackable"} style={{backgroundColor: neighbor.color}}>
+                    {neighbor.nickname}
+                    { 'netWorth' in neighbor && (<small>&nbsp;({Math.round(neighbor.netWorth / 100)})</small>) }
+                  </div>
+                );
+              }))
             }
           </div>
           <div id="trollbox">

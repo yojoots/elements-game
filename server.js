@@ -42,6 +42,7 @@ const initPlayer = (userId, playerIndex) => {
         playerIndex: playerIndex,
         nickname: nameList[Math.floor( Math.random() * nameList.length )],
         color: stringToColour(userId),
+        neighborhood: [],
         lastSpellCastInRound: -1,
         isScrying: false,
         attacking: "",
@@ -99,6 +100,12 @@ function addPlayerToGame(userId, gameId) {
         knownGameStates[gameId] = initGame(gameId);
         gameState = knownGameStates[gameId];
     }
+
+    if (gameState.round > 0) {
+        console.log(`User ${userId} cannot join game ${gameId} already in-progress (round ${gameState.round})`);
+        return;
+    }
+
     player = gameState.players.find((p) => {return p.id == userId});
 
     if (player !== undefined) {
@@ -106,7 +113,7 @@ function addPlayerToGame(userId, gameId) {
         return;
     }
 
-    console.log(`ADDING ${userId} to GAME ${gameId}`);
+    console.log(`User ${userId} joining game ${gameId}`);
     let newPlayer = initPlayer(userId, gameState.players.length + 1);
     gameState.players.push(newPlayer);
     io.to(userId).emit('playerState', {room: gameId, user: userId, playerState: newPlayer});
@@ -264,6 +271,37 @@ io.on('connection', (socket) => {
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
     });
 
+    socket.on("queueAttack", (args) => {
+        if (!(args.roomId && args.userUid)) {
+            return
+        }
+        let roomId = args.roomId;
+        let userId = args.userUid;
+        let gameState = knownGameStates[roomId];
+        if (gameState === undefined) {
+            return
+        }
+        let userExists = arrContains(gameState.players, userId);
+
+        if (!userExists && gameState.round === 0) {
+            // Auto-join for now
+            addPlayerToGame(userId, roomId);
+        }
+        player = gameState.players.find((p) => {return p.id == userId});
+
+        if (player == undefined) {
+            return;
+        }
+
+        console.log(`⚔️⚔️⚔️  Player ${player.playerIndex} attacking Player ${args.targetPlayerIndex} 🛡️🛡️🛡️`);
+
+        player.attacking = args.targetPlayerIndex;
+        gameState.allMoveHistory += `[P${player.playerIndex}:attack(${args.targetPlayerIndex})]`;
+
+        saveGameState(gameState);
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
+    });
+
     socket.on("updateOrder", (args) => {
         if (!args.order) {
             return
@@ -375,7 +413,7 @@ io.on('connection', (socket) => {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
             // Auto-join for now
-            addPlayerToGame(usedrId, roomId);
+            addPlayerToGame(userId, roomId);
         }
 
         player = gameState.players.find((p) => {return p.id == userId});
@@ -412,6 +450,11 @@ io.on('connection', (socket) => {
                 player.water -= 100;
                 player.lastSpellCastInRound = gameState.round;
                 player.isScrying = true;
+                for (p = 0; p < player.neighborhood.length; p++) {
+                    visiblePlayer = player.neighborhood[p];
+                    let theFullPlayer = getPlayerByPlayerIndex(gameState, visiblePlayer.playerIndex);
+                    visiblePlayer.netWorth = theFullPlayer.life + theFullPlayer.air + theFullPlayer.earth + theFullPlayer.fire + theFullPlayer.water;
+                }
             } else {
                 console.log("Ineligible to cast ", theSpell)
             }
@@ -605,6 +648,52 @@ function generateMarket() {
     }
 }
 
+function generateNeighborhood(gameState, playerIndex) {
+    let totalPlayerCount = gameState.players.length;
+
+    let maxNeighborhoodSize = 1;
+
+    console.log("TOTALPLAYERS:", totalPlayerCount);
+
+    if (totalPlayerCount < 2) {
+        return;
+    } else if (totalPlayerCount > 2 && totalPlayerCount < 4) {
+        maxNeighborhoodSize = 2;
+    } else if (totalPlayerCount >= 4 && totalPlayerCount < 8) {
+        maxNeighborhoodSize = 3;
+    } else if (totalPlayerCount >= 8) {
+        maxNeighborhoodSize = 4;
+    }
+
+    console.log("maxNeighborhoodSize:", maxNeighborhoodSize);
+
+    // TODO: skew more towards 2-3 than towards 1 or 4
+    let neighborhoodSize = getRandomInt(maxNeighborhoodSize);
+
+    let neighborhood = [];
+    let neighborhoodIndices = [];
+
+    let i = 0; 
+    
+    while (i < neighborhoodSize) {
+        let candidateNeighbor = getRandomInt(totalPlayerCount);
+        // TODO: fix this indexOf because the visibleNeighborDetails isn't just a number anymore
+        if (candidateNeighbor !== playerIndex && neighborhoodIndices.indexOf(candidateNeighbor) == -1) {
+            console.log("CAND NEIGH:", candidateNeighbor);
+            newNeighbor = getPlayerByPlayerIndex(gameState, candidateNeighbor);
+
+            let visibleNeighborDetails = {playerIndex: newNeighbor.playerIndex, color: newNeighbor.color, nickname: newNeighbor.nickname};
+
+            neighborhood.push(visibleNeighborDetails);
+            neighborhoodIndices.push(candidateNeighbor);
+            i++;
+        }
+    }
+
+    player = getPlayerByPlayerIndex(gameState, playerIndex);
+    player.neighborhood = neighborhood;
+}
+
 function topTroops(player, attackingOrDefending) {
     // Prioritize empower and fortify buffs first
     if (attackingOrDefending == "attack" && player.empower > 0) {
@@ -697,6 +786,7 @@ function processRoundAndProceed(roomId) {
         player.life = player.life * 2;
         player.attacking = "";
         player.isScrying = false;
+        generateNeighborhood(gameState, player.playerIndex);
         io.to(player.id).emit('playerState', {room: roomId, user: player.id, playerState: player});
     }
 

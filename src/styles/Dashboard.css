@@ -89,23 +89,71 @@
     margin-bottom: 10px;
   }
 
+  .element-orders * {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+
   .element-orders div {
       flex: 1;
       margin: 2px;
       text-align: center;
       align-items: center;
       justify-content: center;
-      margin-bottom: 10px;
     }
+
 
   .element-orders span {
       width: 45px;
       font-size: 25px;
-      background: #f5f5f5;
+      background: #0a0f0c;
       border: 1px solid black;
       cursor: pointer;
+      padding: 2px;
+      padding-left: 4px;
+      padding-right: 4px;
+      border-radius: 6px 30%;
+
     }
 
+  .neighborhood-buttons {
+    margin: auto;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    flex-grow: 1;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .neighborhood-buttons > span {
+    margin-top: 10px;
+    margin-right: 20px;
+    vertical-align: middle;
+  }
+
+  .neighborhood-buttons > .attackable {
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+    padding: 10px;
+    text-shadow: 2px 2px black;
+    font-size: 20px;
+    margin-right: 10px;
+  }
+
+  .neighborhood-buttons > .queued {
+    cursor: default;
+    opacity: 0.5;
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+    padding: 10px;
+    text-shadow: 2px 2px black;
+    font-size: 20px;
+    margin-right: 10px;
+  }
   
   .element-buttons {
     margin: auto;
@@ -128,12 +176,21 @@
 
   .element-buttons button {
       width: 50px;
-      font-size: 30px;
+      height: 50px;
+      font-size: 20px;
+      vertical-align: middle;
       border-radius: 50%;
       box-shadow: 1px 1px 2px;
       background: #f5f5f5;
+      background: #272845;
+
       border: 1px solid black;
       cursor: pointer;
+    }
+
+    .element-buttons .earth {
+      font-size: 25px;
+      padding-bottom: 4px;
     }
 
   h4 {
