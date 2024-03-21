@@ -19,9 +19,10 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    width: 100%;
+    width: 95%;
     height: 80%;
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .text-gray {
@@ -75,8 +76,8 @@
 
   .life-emoji {
     font-size: 40px;
+    margin-top: 25px;
   }
-
 
   .element-orders {
     position: absolute;
@@ -97,6 +98,7 @@
   .element-orders div {
       flex: 1;
       margin: 2px;
+      cursor: move;
       text-align: center;
       align-items: center;
       justify-content: center;
@@ -108,7 +110,6 @@
       font-size: 25px;
       background: #0a0f0c;
       border: 1px solid black;
-      cursor: pointer;
       padding: 2px;
       padding-left: 4px;
       padding-right: 4px;
@@ -160,7 +161,7 @@
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    width: 100%;
+    width: 70%;
     flex-grow: 1;
     margin-top: 10px;
     margin-bottom: 10px;
@@ -196,6 +197,18 @@
   h4 {
     margin-bottom: 5px;
   }
+
+  .ml-1 {
+    margin-left: 10px;
+  }
+
+  .mb-2 {
+    margin-bottom: 20px;
+  }
+
+  .bold {
+    font-weight: bold;
+  }
  
   .user {
     font-weight: bold;
@@ -205,8 +218,9 @@
   
   .new-message-form {
     display: flex;
-    width: 100%;
-    padding: 10px;
+    width: 95%;
+    padding: 15px;
+    padding-top: 5px;
   }
   
   .new-message-input {
@@ -218,6 +232,10 @@
     color: #333;
     padding: 10px;
     border-radius: 5px 0 0 5px;
+  }
+
+  *:disabled {
+    cursor: not-allowed;
   }
   
   .send-button {

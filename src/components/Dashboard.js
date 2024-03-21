@@ -23,6 +23,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [firePrice, setFirePrice] = useState(0.25);
   const [waterPrice, setWaterPrice] = useState(0.25);
   const [finalWinnings, setFinalWinnings] = useState(0.00);
+  const [fullWinningsStats, setFullWinningsStats] = useState([]);
   const [lifeScore, setLifeScore] = useState(2000);
   const [airScore, setAirScore] = useState(0);
   const [earthScore, setEarthScore] = useState(0);
@@ -66,7 +67,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   });
 
   if (!isJoined) {
-    socket.emit("startRoom", {
+    socket.emit("joinRoom", {
       userUid: currentUser.uid,
       roomId: room,
       room,
@@ -133,6 +134,30 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     //event.target.classList.toggle("queued");
   };
 
+  const [shiftHeld, setShiftHeld] = useState(false);
+
+
+  function downHandler({key}) {
+    if (key === 'Shift') {
+      setShiftHeld(true);
+    }
+  }
+
+  function upHandler({key}) {
+    if (key === 'Shift') {
+      setShiftHeld(false);
+    }
+  }
+
+  useEffect(() => {
+    window.addEventListener('keydown', downHandler);
+    window.addEventListener('keyup', upHandler);
+    return () => {
+      window.removeEventListener('keydown', downHandler);
+      window.removeEventListener('keyup', upHandler);
+    };
+  }, []);
+
   useEffect(() => {
     socket.on("connection", (room) => {
       socket.join(room);
@@ -168,11 +193,14 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         let player = value.players.find((p) => {return p.id === currentUser.uid});
         console.log("FINALIZING PLAYER:", player);
         setFinalWinnings(player.winnings);
+        let fullWinningsStatistics = value.players.map((p) => {return {playerIndex: p.playerIndex, nickname: p.nickname, winnings: p.winnings};});
+        setFullWinningsStats(fullWinningsStatistics);
         setGameIsOver(true);
       }
     }
 
     function onNewRound(value) {
+      console.log("GOT NEW ROUND:", value);
       setRoundNumber(value.round);
       setRoundWeather(value.weather);
       setAirPrice(value.airPrice);
@@ -199,10 +227,17 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const convertLifeTo = async (elementToGet, event) => {
     event.preventDefault();
 
+    let convertAmount = 1;
+
+    if (shiftHeld) {
+      convertAmount = 10;
+    }
+
     socket.emit("convert", {
         createdAt: serverTimestamp(),
         userUid: currentUser.uid,
         roomId: room,
+        amount: convertAmount,
         element: elementToGet
       });
   };
@@ -267,6 +302,18 @@ export const Dashboard = ({ room, socket, currentUser }) => {
               <div className="life-emoji">💰</div>
               <div>{USDollar.format(finalWinnings)}</div>
               <br />
+            </div>
+            <div className="mb-2">
+            { fullWinningsStats.length > 0 &&
+              (fullWinningsStats.map((p) => {
+                return (
+                  <div key={p.playerIndex}>
+                    <span className="bold">{p.nickname}</span>
+                    <span className="ml-1">{(USDollar.format(p.winnings)) }</span>
+                  </div>
+                );
+              }))
+            }
             </div>
         </div>
       </div>

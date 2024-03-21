@@ -59,6 +59,32 @@ const initPlayer = (userId, playerIndex) => {
 }
 
 const initGame = (roomId) => {
+    var fileContents;
+    try {
+        fileContents = fs.readFileSync(`./games/${roomId}.txt`);
+        let gameState = JSON.parse(fileContents);
+        if (gameState.round <= gameState.roundCount) {
+            console.log("RETURNING OLD GAME:", gameState);
+            return gameState;
+        } else {
+            let randomSuffix = getRandomString(10);
+
+            content = JSON.stringify(gameState);
+            fs.writeFile(`./games/${gameState.roomId}-${randomSuffix}.txt`, content, err => {
+                if (err) {
+                    console.error("ERROR COPYING GAMESTATE, STILL PROCEEDING TO RESTART:", err);
+                } else {
+                    // file written successfully
+                    console.log(`COPIED ${gameState.roomId} to ${gameState.roomId}-${randomSuffix}.txt before restarting`);
+                }
+            });
+        }
+    } catch (err) {
+        // Here you get the error when the file was not found,
+        // but you also get any other error
+        console.log(`ERROR READING FILE: ./games/${roomId}.txt : ${err}`);
+    }
+
     return {
         isTicking: false,
         roomId: roomId,
@@ -92,17 +118,11 @@ const stringToColour = (str) => {
     return colour
 }
 
-function addPlayerToGame(userId, gameId) {
-    let gameState = knownGameStates[gameId];
-    if (gameState === undefined || !knownGameStates[gameId]) {
-        console.log("CREATING ROOM/TABLE WITH ID:", gameId);
-        // If/once we allow customizing game settings, it'll go here
-        knownGameStates[gameId] = initGame(gameId);
-        gameState = knownGameStates[gameId];
-    }
-
+function addPlayerToGame(userId, gameState) {
+    console.log("TRYING TO ADD PLAY:", userId);
+    console.log("ADDING TO:", gameState);
     if (gameState.round > 0) {
-        console.log(`User ${userId} cannot join game ${gameId} already in-progress (round ${gameState.round})`);
+        console.log(`User ${userId} cannot join game ${gameState.roomId} already in-progress (round ${gameState.round})`);
         return;
     }
 
@@ -113,10 +133,18 @@ function addPlayerToGame(userId, gameId) {
         return;
     }
 
-    console.log(`User ${userId} joining game ${gameId}`);
+    console.log(`User ${userId} joining game ${gameState.roomId}`);
     let newPlayer = initPlayer(userId, gameState.players.length + 1);
     gameState.players.push(newPlayer);
-    io.to(userId).emit('playerState', {room: gameId, user: userId, playerState: newPlayer});
+    io.to(userId).emit('playerState', {room: gameState.roomId, user: userId, playerState: newPlayer});
+    io.to(gameState.roomId).emit('newRound', {
+        round: gameState.round,
+        weather: gameState.weather,
+        airPrice: gameState.airPrice,
+        earthPrice: gameState.earthPrice,
+        firePrice: gameState.firePrice,
+        waterPrice: gameState.waterPrice,
+    });
 }
 
 function getPlayerByPlayerIndex(gameState, playerIndex) {
@@ -189,7 +217,7 @@ function arrContains(arr, val) {
 }
 
 io.on('connection', (socket) => {
-    socket.on("startRoom", (args) => {
+    socket.on("joinRoom", (args) => {
         let roomId = args.roomId ? args.roomId : getRandomString(10);
         let userUid = args.userUid ? args.userUid : "";
         if (userUid.length > 0) {
@@ -198,7 +226,32 @@ io.on('connection', (socket) => {
         if (roomId.length > 0) {
             socket.join(roomId);
         }
-        addPlayerToGame(userUid, roomId);
+
+        let gameState = knownGameStates[roomId];
+        if (gameState === undefined || !knownGameStates[roomId]) {
+            console.log("CREATING ROOM/TABLE WITH ID:", roomId);
+            // If/once we allow customizing game settings, it'll go here
+            knownGameStates[roomId] = initGame(roomId);
+            gameState = knownGameStates[roomId];
+        }
+
+        addPlayerToGame(userUid, gameState);
+
+        player = gameState.players.find((p) => {return p.id == userUid});
+        io.to(userUid).emit('playerState', {room: roomId, user: userUid, playerState: player});
+        io.to(roomId).emit('newRound', {
+            round: gameState.round,
+            weather: gameState.weather,
+            airPrice: gameState.airPrice,
+            earthPrice: gameState.earthPrice,
+            firePrice: gameState.firePrice,
+            waterPrice: gameState.waterPrice,
+        });
+
+        if (gameState.round >= gameState.roundCount) {
+            console.log(`Game ${roomId} complete; emitting game results`);
+            io.to(roomId).emit('gameResults', gameState);
+        }
     });
 
     socket.on("submit", (args) => {
@@ -217,7 +270,7 @@ io.on('connection', (socket) => {
 
         if (!userExists && gameState.round === 0) {
             // Auto-join for now (if still in round 0)
-            addPlayerToGame(userId, roomId);
+            addPlayerToGame(userId, gameState);
         }
 
         player = gameState.players.find((p) => {return p.id == userId});
@@ -257,7 +310,7 @@ io.on('connection', (socket) => {
 
         if (!userExists && gameState.round === 0) {
             // Auto-join for now
-            addPlayerToGame(userId, roomId);
+            addPlayerToGame(userId, gameState);
         }
         player = gameState.players.find((p) => {return p.id == userId});
 
@@ -285,7 +338,7 @@ io.on('connection', (socket) => {
 
         if (!userExists && gameState.round === 0) {
             // Auto-join for now
-            addPlayerToGame(userId, roomId);
+            addPlayerToGame(userId, gameState);
         }
         player = gameState.players.find((p) => {return p.id == userId});
 
@@ -328,7 +381,7 @@ io.on('connection', (socket) => {
 
         if (!userExists && gameState.round === 0) {
             // Auto-join for now
-            addPlayerToGame(userId, roomId);
+            addPlayerToGame(userId, gameState);
         }
         player = gameState.players.find((p) => {return p.id == userId});
 
@@ -352,10 +405,7 @@ io.on('connection', (socket) => {
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
         if (gameState === undefined) {
-            // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
-            //return
-            knownGameStates[roomId] = initGame(roomId);
-            gameState = knownGameStates[roomId]
+            return;
         }
 
         let userExists = arrContains(gameState.players, userId);
@@ -364,7 +414,7 @@ io.on('connection', (socket) => {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
             // Auto-join for now
-            addPlayerToGame(userId, roomId);
+            addPlayerToGame(userId, gameState);
         }
 
         player = gameState.players.find((p) => {return p.id == userId});
@@ -373,17 +423,19 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (player.life >= 100) {
-            player.life -= 100;
+        let baseAmount = 100 * args.amount;
+
+        if (player.life >= baseAmount) {
+            player.life -= baseAmount;
             theElement = args.element;
             if (theElement === "air") {
-                player[theElement] += (100 / gameState.airPrice)
+                player[theElement] += (baseAmount / gameState.airPrice)
             } else if (theElement === "earth") {
-                player[theElement] += (100 / gameState.earthPrice)
+                player[theElement] += (baseAmount / gameState.earthPrice)
             } else if (theElement === "fire") {
-                player[theElement] += (100 / gameState.firePrice)
+                player[theElement] += (baseAmount / gameState.firePrice)
             } else if (theElement === "water") {
-                player[theElement] += (100 / gameState.waterPrice)
+                player[theElement] += (baseAmount / gameState.waterPrice)
             }
         }
 
@@ -401,10 +453,7 @@ io.on('connection', (socket) => {
         let userId = args.userUid;
         let gameState = knownGameStates[roomId];
         if (gameState === undefined) {
-            // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
-            //return
-            knownGameStates[roomId] = initGame(roomId);
-            gameState = knownGameStates[roomId]
+            return;
         }
 
         let userExists = arrContains(gameState.players, userId);
@@ -413,7 +462,7 @@ io.on('connection', (socket) => {
             // TODO: we can just `return` here, after gameState saving+loading (for server rebootage) is done
             //return
             // Auto-join for now
-            addPlayerToGame(userId, roomId);
+            addPlayerToGame(userId, gameState);
         }
 
         player = gameState.players.find((p) => {return p.id == userId});
@@ -501,11 +550,6 @@ io.on('connection', (socket) => {
 
     socket.on("nextRound", (args) => {
         roomId = args.room;
-        let gameState = knownGameStates[roomId];
-        if (gameState === undefined) {
-            knownGameStates[roomId] = initGame(roomId);
-            gameState = knownGameStates[roomId]
-        }
         processRoundAndProceed(roomId);
         console.log(`Manually proceeding to round ${gameState.round} in game ID: ${roomId}`);
     });
@@ -727,6 +771,7 @@ function processRoundAndProceed(roomId) {
         gameState.firePrice = 0.25
         gameState.waterPrice = 0.25
         allocateWinnings(gameState);
+        saveGameState(gameState);
         io.to(roomId).emit('gameResults', gameState);
         return;
     }

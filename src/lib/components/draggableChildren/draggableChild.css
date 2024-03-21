@@ -5,10 +5,10 @@
 .grabbable {
 	flex: 1;
 	width: 100%;
-	cursor: move; /* fallback if grab cursor is unsupported */
 	cursor: grab;
 	cursor: -moz-grab;
 	cursor: -webkit-grab;
+	cursor: move; /* fallback if grab cursor is unsupported */
 }
 
 /* (Optional) Apply a "closed-hand" cursor during drag operation. */
