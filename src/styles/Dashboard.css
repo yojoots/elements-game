@@ -3,11 +3,15 @@
     flex-direction: column;
     align-items: center;
     font-family: sans-serif;
-    width: 90%;
+    /*width: 90%;
+    border-radius: 5px;*/
     margin: 0 auto;
-    border-radius: 5px;
     overflow: hidden;
     border: 2px solid #000e2c;
+    background: #090f17ed;
+    background: #002250fc;
+    background: #2a2f35fc;
+    color: #ecfff6;
   }
   .header {
     background-color: #000e2c;
@@ -25,8 +29,22 @@
     overflow-x: hidden;
   }
 
+  .mt-n1 {
+    margin-top: -4px;
+  }
+
+  .flex {
+    display: flex;
+  }
+
+  .text-black {
+    /*color: black;*/
+    font-size: 10px;
+  }
+
   .text-gray {
     color: gray;
+    font-size: 10px;
   }
 
   .pl-1 {
@@ -56,7 +74,7 @@
 
   .attack-and-defense {
     position: absolute;
-    right: 80px;
+    right: 20px;
     margin-top: 10px;
     font-size: 20px;
   }
@@ -70,24 +88,37 @@
 
   .life-score {
     text-align: center;
-    width: 100%;
-    margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .life-emoji {
-    font-size: 40px;
-    margin-top: 25px;
+    font-size: 33px;
+    margin-top: 7px;
+    margin-bottom: 10px;
+  }
+
+  .posRel {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .vertCenter {
+    margin-top: auto;
+    margin-bottom: auto;
   }
 
   .element-orders {
-    position: absolute;
-    right: 400px;
     margin: auto;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     flex-grow: 1;
-    margin-top: 10px;
+    margin-top: -10px;
     margin-bottom: 10px;
+  }
+
+  .element-orders div:nth-child(3) {
+    margin-bottom: 70px;
   }
 
   .element-orders * {
@@ -97,7 +128,7 @@
 
   .element-orders div {
       flex: 1;
-      margin: 2px;
+      margin: 8px;
       cursor: move;
       text-align: center;
       align-items: center;
@@ -107,22 +138,18 @@
 
   .element-orders span {
       width: 45px;
-      font-size: 25px;
+      font-size: 35px;
       background: #0a0f0c;
       border: 1px solid black;
-      padding: 2px;
-      padding-left: 4px;
-      padding-right: 4px;
-      border-radius: 6px 30%;
+      padding: 10px;
+      padding-left: 10px;
+      padding-right: 10px;
+      border-radius: 50%;
 
     }
 
   .neighborhood-buttons {
     margin: auto;
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    flex-grow: 1;
     margin-top: 10px;
     margin-bottom: 10px;
   }
@@ -142,6 +169,7 @@
     text-shadow: 2px 2px black;
     font-size: 20px;
     margin-right: 10px;
+    margin-top: 8px;
   }
 
   .neighborhood-buttons > .queued {
@@ -155,6 +183,20 @@
     font-size: 20px;
     margin-right: 10px;
   }
+
+  .playArea {
+    display: flex;
+    flex-direction: row;
+  }
+
+  @media (max-width: 720px) {
+    .playArea {
+      flex-direction: column;
+    }
+    .neighborhood-buttons {
+      display: flex;
+    }
+  }
   
   .element-buttons {
     margin: auto;
@@ -163,22 +205,32 @@
     align-items: stretch;
     width: 70%;
     flex-grow: 1;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    /*background: white;*/
   }
 
   .element-buttons div {
-      flex: 1;
-      text-align: center;
-      align-items: center;
+      flex: 1 1;
       justify-content: center;
-      margin-bottom: 10px;
+      display: grid;
+      align-content: center;
     }
 
+    .element-buttons div.onRight {
+      float: right;
+      text-align: right;
+    }
+
+    .element-buttons div.onLeft {
+      margin-top: 20px;
+      float: left;
+      text-align: left;
+    }
+
+
   .element-buttons button {
-      width: 50px;
-      height: 50px;
-      font-size: 20px;
+      width: 80px;
+      height: 80px;
+      font-size: 30px;
       vertical-align: middle;
       border-radius: 50%;
       box-shadow: 1px 1px 2px;
@@ -187,11 +239,6 @@
 
       border: 1px solid black;
       cursor: pointer;
-    }
-
-    .element-buttons .earth {
-      font-size: 25px;
-      padding-bottom: 4px;
     }
 
   h4 {
@@ -204,6 +251,18 @@
 
   .mb-2 {
     margin-bottom: 20px;
+  }
+
+  .mt-3 {
+    margin-top: 40px;
+  }
+
+  .mt-1 {
+    margin-top: 5px;
+  }
+
+  .mb-1 {
+    margin-bottom: 5px;
   }
 
   .bold {
@@ -229,7 +288,7 @@
     outline: none;
     background: transparent;
     font-size: 16px;
-    color: #333;
+    color: #c2c2c2;
     padding: 10px;
     border-radius: 5px 0 0 5px;
   }
@@ -252,12 +311,13 @@
   }
 
   .new-nickname {
-    position: absolute;
-    right: 200px;
+    margin-left: 20px;
+    margin-top: -10px;
+    z-index:4;
   }
 
   .new-nickname-input {
-    width: 110px;
+    width: 90px;
     outline: none;
     background: transparent;
     border: 1px dashed #7f7fbf;
@@ -265,6 +325,7 @@
     margin-top: 2px;
     padding: 5px;
     margin-right: 3px;
+    color: #c8e5ff;
   }
 
   #trollbox {
@@ -273,3 +334,423 @@
     padding-left: 1em;
     border-top: 1px dashed black;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  .anyElement {
+    align-items: center;
+    align-content: center;
+    text-align: center;
+    margin-top:auto;
+    display: grid;
+    height: inherit;
+    font-size: 30px;
+    background-color: black;
+    background-color: #06261f;
+    border: 1px solid #ffffff0f;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+  }
+
+  .anyElement small{
+    font-size: 10px;
+    pointer-events: none;
+  }
+
+  .anyElement strong{
+    font-size: 15px;
+    pointer-events: none;
+  }
+
+  .clickableButton {
+    cursor: pointer;
+  }
+
+.lifeInCenter {
+    position: absolute;
+    align-items: center;
+    align-content: center;
+    text-align: center;
+    top: 300px;
+    left: 225px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    z-index: 3;
+    background-color: rgb(46, 54, 49);
+}
+.seed {
+    position: absolute;
+    top: 245px;
+    left: 130px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+}
+.fortify {
+    position: absolute;
+    top: 355px;
+    left: 130px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+}
+.empower {
+    position: absolute;
+    top: 245px;
+    left: 325px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+}
+.scry {
+    position: absolute;
+    top: 355px;
+    left: 325px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+}
+.air {
+    position: absolute;
+    top: 187px;
+    left: 400px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    background-color: #edf6ff8a;
+}
+.fire {
+    position: absolute;
+    top: 412px;
+    left: 400px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    background-color: #f31302f5;
+}
+.earth {
+    position: absolute;
+    top: 190px;
+    left: 10px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    background-color: #795548;
+}
+.water {
+    position: absolute;
+    top: 412px;
+    left: 10px;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    background-color: #0086c3eb;
+}
+
+
+
+
+
+
+@-webkit-keyframes breathing {
+0% {
+-moz-box-shadow: 0px 1px -1px #F00;
+-webkit-box-shadow: 0px 1px -1px #F00;
+box-shadow: 0px 1px -1px #F00;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #F00;
+-webkit-box-shadow: 0px 1px 25px #F00;
+box-shadow: 0px 1px 25px #F00;
+}
+}
+@-moz-keyframes breathing {
+0% {
+-moz-box-shadow: 0px 1px 1px #F00;
+-webkit-box-shadow: 0px 1px 1px #F00;
+box-shadow: 0px 1px 1px #F00;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #F00;
+-webkit-box-shadow: 0px 1px 25px #F00;
+box-shadow: 0px 1px 25px #F00;
+}
+}
+@keyframes breathing {
+0% {
+-moz-box-shadow: 0px 1px 1px #F00;
+-webkit-box-shadow: 0px 1px 1px #F00;
+box-shadow: 0px 1px 1px #F00;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #F00;
+-webkit-box-shadow: 0px 1px 25px #F00;
+box-shadow: 0px 1px 25px #F00;
+}
+}
+
+
+@-webkit-keyframes breathingBlue {
+0% {
+-moz-box-shadow: 0px 1px -1px #1955f5;
+-webkit-box-shadow: 0px 1px -1px #1955f5;
+box-shadow: 0px 1px -1px #1955f5;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #1955f5;
+-webkit-box-shadow: 0px 1px 25px #1955f5;
+box-shadow: 0px 1px 25px #1955f5;
+}
+}
+@-moz-keyframes breathingBlue {
+0% {
+-moz-box-shadow: 0px 1px 1px #1955f5;
+-webkit-box-shadow: 0px 1px 1px #1955f5;
+box-shadow: 0px 1px 1px #1955f5;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #1955f5;
+-webkit-box-shadow: 0px 1px 25px #1955f5;
+box-shadow: 0px 1px 25px #1955f5;
+}
+}
+@keyframes breathingBlue {
+0% {
+-moz-box-shadow: 0px 1px 1px #1955f5;
+-webkit-box-shadow: 0px 1px 1px #1955f5;
+box-shadow: 0px 1px 1px #1955f5;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #1955f5;
+-webkit-box-shadow: 0px 1px 25px #1955f5;
+box-shadow: 0px 1px 25px #1955f5;
+}
+}
+
+
+
+@-webkit-keyframes breathingGray {
+0% {
+-moz-box-shadow: 0px 1px -1px #e5f7fc;
+-webkit-box-shadow: 0px 1px -1px #e5f7fc;
+box-shadow: 0px 1px -1px #e5f7fc;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #e5f7fc;
+-webkit-box-shadow: 0px 1px 25px #e5f7fc;
+box-shadow: 0px 1px 25px #e5f7fc;
+}
+}
+@-moz-keyframes breathingGray {
+0% {
+-moz-box-shadow: 0px 1px 1px #e5f7fc;
+-webkit-box-shadow: 0px 1px 1px #e5f7fc;
+box-shadow: 0px 1px 1px #e5f7fc;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #e5f7fc;
+-webkit-box-shadow: 0px 1px 25px #e5f7fc;
+box-shadow: 0px 1px 25px #e5f7fc;
+}
+}
+@keyframes breathingGray {
+0% {
+-moz-box-shadow: 0px 1px 1px #e5f7fc;
+-webkit-box-shadow: 0px 1px 1px #e5f7fc;
+box-shadow: 0px 1px 1px #e5f7fc;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #e5f7fc;
+-webkit-box-shadow: 0px 1px 25px #e5f7fc;
+box-shadow: 0px 1px 25px #e5f7fc;
+}
+}
+
+
+@-webkit-keyframes breathingBrown {
+0% {
+-moz-box-shadow: 0px 1px -1px #593b0e;
+-webkit-box-shadow: 0px 1px -1px #593b0e;
+box-shadow: 0px 1px -1px #593b0e;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #593b0e;
+-webkit-box-shadow: 0px 1px 25px #593b0e;
+box-shadow: 0px 1px 25px #593b0e;
+}
+}
+@-moz-keyframes breathingBrown {
+0% {
+-moz-box-shadow: 0px 1px 1px #593b0e;
+-webkit-box-shadow: 0px 1px 1px #593b0e;
+box-shadow: 0px 1px 1px #593b0e;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #593b0e;
+-webkit-box-shadow: 0px 1px 25px #593b0e;
+box-shadow: 0px 1px 25px #593b0e;
+}
+}
+@keyframes breathingBrown {
+0% {
+-moz-box-shadow: 0px 1px 1px #593b0e;
+-webkit-box-shadow: 0px 1px 1px #593b0e;
+box-shadow: 0px 1px 1px #593b0e;
+}
+50% {
+-moz-box-shadow: 0px 1px 25px #593b0e;
+-webkit-box-shadow: 0px 1px 25px #593b0e;
+box-shadow: 0px 1px 25px #593b0e;
+}
+}
+
+.fireItem {
+float: left;
+margin-left: 20px;
+-moz-box-shadow: 0px 1px 1px #F00;
+-webkit-box-shadow: 0px 1px 1px #F00;
+box-shadow: 0px 1px 1px #F00;
+animation: breathing 3s linear infinite;
+-ms-animation: breathing 3s linear infinite;
+-webkit-animation: breathing 3s linear infinite;
+-moz-animation: breathing 3s linear infinite;
+-o-animation: breathing 3s linear infinite;
+}
+.fireItem h1 {
+color: #666;
+font-weight: 500;
+padding-top: 45%;
+text-align: center;
+}
+
+.waterItem {
+float: left;
+margin-left: 20px;
+-moz-box-shadow: 0px 1px 1px #1955f5;
+-webkit-box-shadow: 0px 1px 1px #1955f5;
+box-shadow: 0px 1px 1px #1955f5;
+animation: breathingBlue 3s linear infinite;
+-ms-animation: breathingBlue 3s linear infinite;
+-webkit-animation: breathingBlue 3s linear infinite;
+-moz-animation: breathingBlue 3s linear infinite;
+-o-animation: breathingBlue 3s linear infinite;
+}
+.waterItem h1 {
+color: #666;
+font-weight: 500;
+padding-top: 45%;
+text-align: center;
+}
+
+.airItem {
+float: left;
+margin-left: 20px;
+-moz-box-shadow: 0px 1px 1px #e5f7fc;
+-webkit-box-shadow: 0px 1px 1px #e5f7fc;
+box-shadow: 0px 1px 1px #e5f7fc;
+animation: breathingGray 3s linear infinite;
+-ms-animation: breathingGray 3s linear infinite;
+-webkit-animation: breathingGray 3s linear infinite;
+-moz-animation: breathingGray 3s linear infinite;
+-o-animation: breathingGray 3s linear infinite;
+}
+.airItem h1 {
+color: #666;
+font-weight: 500;
+padding-top: 45%;
+text-align: center;
+}
+
+
+.earthItem {
+float: left;
+margin-left: 20px;
+-moz-box-shadow: 0px 1px 1px #1f1404;
+-webkit-box-shadow: 0px 1px 1px #1f1404;
+box-shadow: 0px 1px 1px #1f1404;
+animation: breathingBrown 3s linear infinite;
+-ms-animation: breathingBrown 3s linear infinite;
+-webkit-animation: breathingBrown 3s linear infinite;
+-moz-animation: breathingBrown 3s linear infinite;
+-o-animation: breathingBrown 3s linear infinite;
+}
+.earthItem h1 {
+color: #666;
+font-weight: 500;
+padding-top: 45%;
+text-align: center;
+}
+
+.middleColumn {
+display: flex;
+flex-direction: column;
+gap: 9px;
+position: absolute;
+top: 80px;
+left: 225px;
+border-radius: 50%;
+width: 100px;
+height: 100%;
+z-index: 1;
+}
+
+.middleColumn div:nth-child(2) {
+margin-bottom: 110px;
+}
+
+
+
+.btn-4 {
+--clr: #6cd598d1;
+--outline: 1px solid #6cd598d1;
+color: var(--clr);
+outline: var(--outline);
+border: var(--outline);
+outline-offset: -1px;
+/*transition: outline-width 200ms ease, outline-offset 200ms ease;*/
+transition: box-shadow 300ms ease;
+}
+
+.btn-4:hover,
+.btn-4:focus {
+/*outline: var(--outline);
+outline-width: 3px;
+outline-offset: -3px;
+filter: blur(2px);*/
+box-shadow: inset 0px 0px 2px 2px #6cd598d1;
+}
+
+#myCanvas {
+position: absolute;
+width: 480px;
+height: 540px;
+z-index: 20;
+pointer-events: none;
+top: 80px;
+right: 310px;
+}
+
+.container {
+  min-width: 600px;
+  position: relative;
+  margin-top: -75px;
+  height: 575px;
+  margin-bottom: 50px;
+}

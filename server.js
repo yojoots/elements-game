@@ -685,10 +685,10 @@ function generateMarket() {
     let rawTotal = rawAirRNG + rawEarthRNG + rawFireRNG + rawWaterRNG;
 
     return {
-        airPrice: rawAirRNG / rawTotal,
-        earthPrice: rawEarthRNG / rawTotal,
-        firePrice: rawFireRNG / rawTotal,
-        waterPrice: rawWaterRNG / rawTotal
+        airPrice: Math.round(rawAirRNG * 10000 / rawTotal) / 10000,
+        earthPrice: Math.round(rawEarthRNG * 10000 / rawTotal) / 10000,
+        firePrice: Math.round(rawFireRNG * 10000 / rawTotal) / 10000,
+        waterPrice: Math.round(rawWaterRNG * 10000 / rawTotal) / 10000
     }
 }
 
@@ -842,6 +842,7 @@ function processRoundAndProceed(roomId) {
     gameState.firePrice = newPrices.firePrice;
     gameState.waterPrice = newPrices.waterPrice;
     gameState.round = gameState.round + 1;
+    gameState.allMoveHistory += `[S:a(${gameState.airPrice}),e(${gameState.earthPrice}),f(${gameState.firePrice}),w(${gameState.waterPrice}),weather(${gameState.weather})]`
     saveGameState(gameState);
     io.to(roomId).emit('newRound', {
         round: gameState.round,

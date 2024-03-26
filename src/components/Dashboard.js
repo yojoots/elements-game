@@ -112,7 +112,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
 
 
   const queueAttack = async (event, targetPlayerIndex) => {
-    //event.preventDefault();
     if (targetPlayerIndex < 0) return;
 
     if (event.target.classList.contains("queued")) return;
@@ -124,14 +123,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         roomId: room
       })
 
-    // let allQueuedAttacks = document.querySelectorAll(".queued");
-    // for (let queuedAttack of allQueuedAttacks) {
-    //   queuedAttack.classList.remove("queued");
-    // }
-
     setAttacking(targetPlayerIndex);
-
-    //event.target.classList.toggle("queued");
   };
 
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -164,14 +156,12 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     });
 
     function onNewMessage(value) {
-      console.log("GOT NEW MESSAGE:", value);
       if (value.room === room) {
         setMessages(messages => [...messages, value]);
       }
     }
 
     const onPlayerState = (value) => {
-      console.log("GOT NEW PLAYERSTATE:", value);
       if (value.room === room && value.user === currentUser.uid) {
         setNickname(value.playerState.nickname);
         setAirScore(value.playerState.air);
@@ -188,10 +178,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     }
 
     const onGameResults = (value) => {
-      console.log("GOT ENDGAME RESULTS:", value);
       if (value.roomId === room) {
         let player = value.players.find((p) => {return p.id === currentUser.uid});
-        console.log("FINALIZING PLAYER:", player);
         setFinalWinnings(player.winnings);
         let fullWinningsStatistics = value.players.map((p) => {return {playerIndex: p.playerIndex, nickname: p.nickname, winnings: p.winnings};});
         setFullWinningsStats(fullWinningsStatistics);
@@ -200,7 +188,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     }
 
     function onNewRound(value) {
-      console.log("GOT NEW ROUND:", value);
       setRoundNumber(value.round);
       setRoundWeather(value.weather);
       setAirPrice(value.airPrice);
@@ -267,7 +254,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
       newOrder += thisLetter;
     }
 
-    console.log("NEW ORDER:", newOrder);
     socket.emit("updateOrder", {
       order: newOrder,
       createdAt: serverTimestamp(),
@@ -288,7 +274,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     return (
       <div className="dashboard-app">
         <div className="header">
-          <h1>Game: {room || "Game"}</h1>
+          <h2 className="mt-n1">Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber} (COMPLETE)</h3>
         </div>
         <div className="messages">
@@ -324,112 +310,113 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     <>
       <div className="dashboard-app">
         <div className="header">
-          <h1>Game: {room || "Game"}</h1>
+          <h2 className="mt-n1">Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber}</h3>
           <div className="weather">Weather: {roundWeather}</div>
         </div>
         <div className="messages">
+          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small></h3>
           { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
             <input
               type="text"
               value={nicknameInput}
               onChange={(event) => setNicknameInput(event.target.value)}
               className="new-nickname-input"
-              placeholder="Update nickname"
+              placeholder="Edit nickname"
             />
-            <button type="submit" className="nickname-button">
-              Update
-            </button>
+            <button type="submit" className="nickname-button">⤴</button>
           </form> ) }
-          <div className="element-orders" title={elementOrder}>
-            <small>Battle Order:</small>
-              <Draggable onPosChangeTwo={reorderElements}>
-                <div id="airOrderDiv" className="orderQ" data-elch={"a"}>
-                  <span>💨</span>
-                </div>
-                <div id="earthOrderDiv" className="orderQ" data-elch={"e"}>
-                  <span className="earth">⛰️</span>
-                </div>
-                <div id="fireOrderDiv" className="orderQ" data-elch={"f"}>
-                  <span>🔥</span>
-                </div>
-                <div id="waterOrderDiv" className="orderQ" data-elch={"w"}>
-                  <span>💧</span>
-                </div>
-              </Draggable>
-          </div>
-          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small></h3>
           <div className="attack-and-defense">
             <div>{Math.round(empowerScore / 100)} ⚔️</div>
             <div>{Math.round(fortifyScore / 100)} 🛡️</div>
           </div>
-          <div className="life-score">
-            <div className="life-emoji">🌱</div>
-            <div><strong>{Math.round(lifeScore / 100)}</strong></div>
-          </div>
-          <div className="element-buttons">
-            <div>
-              <div><strong>{Math.round(airScore / 100)}</strong></div>
-              <button onClick={(e) => convertLifeTo("air", e)}>💨</button>
-              <div><small>{Math.round(airPrice * 100) / 100}</small></div>
-            </div>
-            <div>
-              <div><strong>{Math.round(earthScore / 100)}</strong></div>
-              <button className={"earth"} onClick={(e) => convertLifeTo("earth", e)}>⛰️</button>
-              <div><small>{Math.round(earthPrice * 100) / 100}</small></div>
-            </div>
-            <div>
-              <div><strong>{Math.round(fireScore / 100)}</strong></div>
-              <button onClick={(e) => convertLifeTo("fire", e)}>🔥</button>
-              <div><small>{Math.round(firePrice * 100) / 100}</small></div>
-            </div>
-            <div>
-              <div><strong>{Math.round(waterScore / 100)}</strong></div>
-              <button onClick={(e) => convertLifeTo("water", e)}>💧</button>
-              <div><small>{Math.round(waterPrice * 100) / 100}</small></div>
-            </div>
-          </div>
-          <div className="element-buttons">
-            { airScore > 0 && earthScore > 0 && fireScore > 0 &&
-            (<div>
-              <div className={canCastSpell ? "text-black" : "text-gray"}>Empower</div>
-              <button disabled={!canCastSpell} onClick={(e) => castSpell("empower", e)}>⚔️</button>
-            </div>)
-            }
-            { waterScore > 0 && earthScore > 0 && fireScore > 0 &&
-              <div>
-                <div className={canCastSpell ? "text-black" : "text-gray"}>Fortify</div>
-                <button disabled={!canCastSpell} onClick={(e) => castSpell("fortify", e)}>🛡️</button>
+          <div className="playArea">
+            <div className="container">
+              <div className="lifeInCenter btn-4 anyElement">
+                <span>🌱</span>
+                <div><strong>{Math.round(lifeScore / 100)}</strong></div>
               </div>
-            }
-            { airScore > 0 && fireScore > 0 && waterScore > 0 &&
-              <div>
-                <div className={canCastSpell ? "text-black" : "text-gray"}>Scry</div>
-                <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>👁️</button>
+              <div className="middleColumn" title={elementOrder}>
+                <Draggable onPosChangeTwo={reorderElements}>
+                  <div id="airOrderDiv" data-elch={"a"} className="anyElement"><span>💨</span></div>
+                  <div id="earthOrderDiv" data-elch={"e"} className="anyElement"><span>⛰️</span></div>
+                  <div id="fireOrderDiv" data-elch={"f"} className="anyElement"><span>🔥</span></div>
+                  <div id="fireOrderDiv" data-elch={"w"}  className="anyElement"><span>💧</span></div>
+                </Draggable>
               </div>
-            }
-            { airScore > 0 && earthScore > 0 && waterScore > 0 &&
-              <div>
-                <div className={canCastSpell ? "text-black" : "text-gray"}>Seed</div>
-                <button disabled={!canCastSpell} onClick={(e) => castSpell("seed", e)}>🌿</button>
-              </div>
-            }
-          </div>
-          <div className="neighborhood-buttons">
-            { neighborhood.length > 0 &&
-            (
-              <span>Attack:</span>
-            )}
-            { neighborhood.length > 0 &&
-              (neighborhood.map((neighbor) => {
-                return (
-                  <div key={neighbor.playerIndex} onClick={(e) => queueAttack(e, neighbor.playerIndex)} className={attacking === neighbor.playerIndex ? "flex-item queued" : "flex-item attackable"} style={{backgroundColor: neighbor.color}}>
-                    {neighbor.nickname}
-                    { 'netWorth' in neighbor && (<small>&nbsp;({Math.round(neighbor.netWorth / 100)})</small>) }
+              <div className="empower element-buttons">
+                { airScore > 0 && earthScore > 0 && fireScore > 0 &&
+                  <div>
+                    <div className={canCastSpell ? "text-black mb-1" : "text-gray mb-1"}>Empower</div>
+                    <button disabled={!canCastSpell} onClick={(e) => castSpell("empower", e)}>⚔️</button>
                   </div>
-                );
-              }))
-            }
+                }
+              </div>
+              <div className="fortify element-buttons">
+                { waterScore > 0 && earthScore > 0 && fireScore > 0 &&
+                  <div>
+                    <button disabled={!canCastSpell} onClick={(e) => castSpell("fortify", e)}>🛡️</button>
+                    <div className={canCastSpell ? "text-black mt-1" : "text-gray mt-1"}>Fortify</div>
+                  </div>
+                }
+              </div>
+              <div className="scry element-buttons">
+                { airScore > 0 && fireScore > 0 && waterScore > 0 &&
+                  <div>
+                    <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
+                    <div className={canCastSpell ? "text-black mt-1" : "text-gray mt-1"}>Scry</div>
+                  </div>
+                }
+              </div>
+              <div className="seed element-buttons">
+                { airScore > 0 && earthScore > 0 && waterScore > 0 &&
+                  <div>
+                    <div className={canCastSpell ? "text-black mb-1" : "text-gray mb-1"}>Seed</div>
+                    <button disabled={!canCastSpell} onClick={(e) => castSpell("seed", e)}>🌿</button>
+                  </div>
+                }
+              </div>
+              <div className="fire fireItem anyElement clickableButton" onClick={(e) => convertLifeTo("fire", e)}>
+                <div>
+                  <strong>{Math.round(fireScore / 100)}</strong></div>
+                  <span>🔥</span>
+                  <small>{Math.round(firePrice * 100) / 100}</small>
+              </div>
+              <div className="water waterItem anyElement clickableButton" onClick={(e) => convertLifeTo("water", e)}>
+                <div>
+                  <strong>{Math.round(waterScore / 100)}</strong></div>
+                  <span>💧</span>
+                  <small>{Math.round(waterPrice * 100) / 100}</small>
+              </div>
+              <div className="earth earthItem anyElement clickableButton" onClick={(e) => convertLifeTo("earth", e)}>
+                <div>
+                  <strong>{Math.round(earthScore / 100)}</strong></div>
+                  <span>⛰️</span>
+                  <small>{Math.round(earthPrice * 100) / 100}</small>
+              </div>
+              <div className="air airItem anyElement clickableButton" onClick={(e) => convertLifeTo("air", e)}>
+                <div>
+                  <strong>{Math.round(airScore / 100)}</strong></div>
+                  <span>💨</span>
+                  <small>{Math.round(airPrice * 100) / 100}</small>
+              </div>
+            </div>
+            <div className="neighborhood-buttons">
+              { neighborhood.length > 0 &&
+              (
+                <span>Attack:</span>
+              )}
+              { neighborhood.length > 0 &&
+                (neighborhood.map((neighbor) => {
+                  return (
+                    <div key={neighbor.playerIndex} onClick={(e) => queueAttack(e, neighbor.playerIndex)} className={attacking === neighbor.playerIndex ? "flex-item queued" : "flex-item attackable"} style={{backgroundColor: neighbor.color}}>
+                      {neighbor.nickname}
+                      { 'netWorth' in neighbor && (<small>&nbsp;({Math.round(neighbor.netWorth / 100)})</small>) }
+                    </div>
+                  );
+                }))
+              }
+            </div>
           </div>
           <div id="trollbox">
           {messages.map((message) => (
