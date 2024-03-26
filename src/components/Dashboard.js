@@ -126,6 +126,128 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     setAttacking(targetPlayerIndex);
   };
 
+  function boomboom() {
+    //Clear any existing page
+    let battleArea = document.querySelector("#battle");
+    battleArea.innerHTML="";
+
+    var space=document.createElement("div");
+    var battleTitle=document.createElement("div");
+    var iterator=0;
+    var stars = 30;
+    var timer=100;
+
+    //Set container
+    space.setAttribute("id","space");
+    space.setAttribute("style","width:600px;height:300px;margin:auto;border:solid 1px #000;position:relative;overflow:hidden;background:#0000003d;border-radius:8px;margin-bottom:10px;color:#fff");
+    battleTitle.setAttribute("style","text-align:center;width:600px;height:20px;margin:auto;padding-top:12px;padding-bottom:10px;position:relative;overflow:hidden;background:#0000003d;border-radius:8px;color:#fff");
+    battleTitle.innerText="Battle!"
+    battleArea.appendChild(battleTitle);
+    battleArea.appendChild(space);
+
+    //Set interval and draw...
+    var interval = setInterval(function(){ drawStars(iterator,stars); }, timer);
+    drawStars(iterator, stars);
+
+    function drawStars(r,c) {
+        clearInterval(interval);
+
+        //a container for this set of stars
+        var starContainer=document.createElement("div");
+
+        //don't draw more if there are too many, it's got to go
+        if(iterator < 160) {
+            for(var i = 0; i < c; i++) {
+                var x,y;
+
+                if(iterator < 10) {
+                    x=300 + r * Math.cos(2 * Math.PI * i / c) * 0.7;
+                    y=150 + r * Math.sin(2 * Math.PI * i / c) * 0.7;
+                }
+
+                //add some randomness for the boom boom
+                if(iterator > 10) {
+                    x=300 + r * Math.cos(2 * Math.PI * i / c) * 0.7*Math.random();
+                    y=150 + r * Math.sin(2 * Math.PI * i / c) * 0.7*Math.random();
+                }
+
+                var bulletY = 150;
+                //Make a bullet
+                var bullet=document.createElement("div");
+                bullet.setAttribute("class","star");
+                bullet.setAttribute("style","font-size:25px; position:absolute; left:"+ iterator*2 +"px;top:"+ bulletY +"px;"+"color:blue");
+                bullet.textContent="●";
+                starContainer.appendChild(bullet);
+
+                var bullet2=document.createElement("div");
+                bullet2.setAttribute("class","star");
+                bullet2.setAttribute("style","font-size:25px; position:absolute; right:"+ iterator*2 +"px;top:"+ bulletY +"px;"+"color:red");
+                bullet2.textContent="●";
+                starContainer.appendChild(bullet2);
+
+                if (iterator > 100) {
+                  //Make a star
+                  var star=document.createElement("div");
+                  star.setAttribute("class","star");
+
+                  //Exploding stars are red, I hope
+                  var color = iterator < 120 ? "color:#fff" : "color:rgb("+parseInt(25*Math.random())+","+parseInt(255*Math.random())+","+parseInt(255*Math.random())+")";
+                  star.setAttribute("style","position:absolute; left:"+ x +"px;top:"+ y +"px;"+color);
+
+                  //Change the star character as boom boom gets bigger
+                  if (iterator <= 120) {
+                      star.textContent="*";
+                  }
+                  else if(iterator >120 & iterator <= 140) {
+                      star.textContent="o";
+                  }
+                  else {
+                      star.textContent="-";
+                  }
+                  //Add the star to its container
+                  starContainer.appendChild(star);
+                }
+            }
+        }
+        //draw the container
+        space.appendChild(starContainer);
+
+        //increment the iterator.  It's an iterator because we're using intervals and it's late.
+        iterator+=4;
+
+        //remove stars when we get too many
+        if(iterator > 50) {
+            space.removeChild(space.firstChild);
+        }
+        if(iterator < 220) { //do it all again
+            timer = timer > 10 ? timer-10 : timer;
+            interval=setInterval(function(){ drawStars(iterator,stars); }, timer);
+        }
+
+        //make sure it's actually empty
+        else {
+            //space.innerHTML="";
+            //battleArea.innerHTML="";
+
+            var returningTroopsX = 500 - (iterator);
+            var returningTroopsY = 145;
+            var goingLeftOrRight="left";
+            //Make a bullet
+            var returningTroops=document.createElement("div");
+            returningTroops.setAttribute("class","star");
+            returningTroops.setAttribute("style","font-size:30px;position:absolute;"+goingLeftOrRight+":"+ returningTroopsX +"px;top:"+ returningTroopsY +"px;"+"color:blue");
+            returningTroops.textContent="●";
+            starContainer.appendChild(returningTroops);
+
+            if(iterator < 720) { //do it all again
+              interval=setInterval(function(){ drawStars(iterator,stars); }, timer);
+            } else {
+              space.innerHTML="";
+            }
+        }
+    }
+}
+
   const [shiftHeld, setShiftHeld] = useState(false);
 
 
@@ -138,6 +260,11 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   function upHandler({key}) {
     if (key === 'Shift') {
       setShiftHeld(false);
+    } else if (key === 'e') {
+      boomboom();
+      // for(let i = 0; i < 10; i++) {
+      //   setTimeout(boomboom, i*820);
+      // }
     }
   }
 
@@ -274,15 +401,15 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     return (
       <div className="dashboard-app">
         <div className="header">
-          <h2 className="mt-n1">Game: {room || "Game"}</h2>
+          <h2 className="mb-1">Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber} (COMPLETE)</h3>
         </div>
         <div className="messages">
           <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small><small> {isJoined ? "🟢" : "🔴"}</small></h3>
             <div className="life-score">
-              <h4>Final Life Score:</h4>
+              <h4>Final Life & Elements Score:</h4>
               <div className="life-emoji">🌱</div>
-              <div>{Math.round(lifeScore / 100)}</div>
+              <div>{Math.round((lifeScore + ((earthScore + airScore + fireScore)/ 4)) / 100)}</div>
               <br />
               <h4>Your Winnings:</h4>
               <div className="life-emoji">💰</div>
@@ -309,8 +436,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   return (
     <>
       <div className="dashboard-app">
-        <div className="header">
-          <h2 className="mt-n1">Game: {room || "Game"}</h2>
+        <div className="header pb-2 mb-2">
+          <h2>Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber}</h3>
           <div className="weather">Weather: {roundWeather}</div>
         </div>
@@ -326,11 +453,11 @@ export const Dashboard = ({ room, socket, currentUser }) => {
             />
             <button type="submit" className="nickname-button">⤴</button>
           </form> ) }
-          <div className="attack-and-defense">
+          <div className="attack-and-defense js-explosion">
             <div>{Math.round(empowerScore / 100)} ⚔️</div>
             <div>{Math.round(fortifyScore / 100)} 🛡️</div>
           </div>
-          <div className="playArea">
+          <div id="playArea" className="playArea">
             <div className="container">
               <div className="lifeInCenter btn-4 anyElement">
                 <span>🌱</span>
@@ -418,6 +545,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
               }
             </div>
           </div>
+          <div id="battle"></div>
           <div id="trollbox">
           {messages.map((message) => (
             <div key={message.id} className="message">

@@ -11,6 +11,7 @@
     background: #090f17ed;
     background: #002250fc;
     background: #2a2f35fc;
+    background-image: linear-gradient(332deg, rgb(3, 48, 9) 0%, rgb(36, 25, 10) 31.25%, rgb(0, 9, 42) 100%);
     color: #ecfff6;
   }
   .header {
@@ -18,19 +19,25 @@
     color: white;
     width: 100%;
     text-align: center;
+    border-bottom: 1px solid #21c80b42;
+    padding-top: 20px;
   }
   .messages {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     width: 95%;
-    height: 80%;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
   }
 
   .mt-n1 {
     margin-top: -4px;
+  }
+
+  .pb-2 {
+    padding-bottom: 20px;
   }
 
   .flex {
@@ -149,7 +156,7 @@
     }
 
   .neighborhood-buttons {
-    margin: auto;
+    /* margin: auto; */
     margin-top: 10px;
     margin-bottom: 10px;
   }
@@ -205,6 +212,7 @@
     align-items: stretch;
     width: 70%;
     flex-grow: 1;
+    user-select: none;
     /*background: white;*/
   }
 
@@ -263,6 +271,10 @@
 
   .mb-1 {
     margin-bottom: 5px;
+  }
+
+  .mb-15 {
+    margin-bottom: 10px;
   }
 
   .bold {
@@ -366,6 +378,7 @@
     border-radius: 50%;
     width: 100px;
     height: 100px;
+    user-select: none;
   }
 
   .anyElement small{
@@ -751,6 +764,10 @@ right: 310px;
   min-width: 600px;
   position: relative;
   margin-top: -75px;
-  height: 575px;
+  height: 600px;
   margin-bottom: 50px;
+}
+
+#battle {
+  margin: auto;
 }
