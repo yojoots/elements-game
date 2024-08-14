@@ -39,16 +39,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [lastSpellCastInRound, setLastSpellCastInRound] = useState(-1);
   const [canCastSpell, setCanCastSpell] = useState(true);
 
-  const arenaRef = useRef(null); // Initialize the ref with null
-
-  //const [arena, setArena] = useState()
-  const [arenaX, setArenaX] = useState(0);
-  const [arenaY, setArenaY] = useState(0);
-  const [arenaWidth, setArenaWidth] = useState(0);
-  const [arenaHeight, setArenaHeight] = useState(0);
-  const [centerX, setCenterX] = useState(0);
-  const [centerY, setCenterY] = useState(0);
-
   //console.log("SOCKET:", socket);
 
   // const messagesRef = collection(db, "messages");
@@ -152,6 +142,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     for (let i = 0; i < circleCount; i++) {
       // Stagger the creation of each circle
       setTimeout(() => {
+        const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
 
         const circle = document.createElement('div');
         circle.className = 'circle';
@@ -161,12 +152,14 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         circle.style.top = '0px';
         circle.style.left = `${Math.random() * arenaWidth}px`; // Random position along the width
 
-        arenaRef.current.appendChild(circle);
+        arena.appendChild(circle);
         moveCircle(circle);
       }, i * 100); // Stagger each circle by 100 milliseconds
     }
 
     function moveCircle(circle) {
+      const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
+
         const interval = setInterval(function () {
             const rect = circle.getBoundingClientRect();
             const distX = Math.abs((rect.left + (rect.width / 2)) - centerX - arenaX);
@@ -187,6 +180,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     }
 }
 function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
+  const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
+
   for (let i = 0; i < circleCount; i++) {
       setTimeout(() => {
           const circle = document.createElement('div');
@@ -199,10 +194,10 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
           const randomizer2 = Math.random() * 15 - 10; // Random deviation from center, range -50 to +50 pixels
 
           // Positioning circles at the center
-          circle.style.top = `${centerY - 30 + (randomizer)}px`; // Adjusted for the circle's size
+          circle.style.top = `${centerY - 35 + (randomizer)}px`; // Adjusted for the circle's size
           circle.style.left = `${centerX - 10 + (randomizer2)}px`;
 
-          arenaRef.current.appendChild(circle);
+          arena.appendChild(circle);
           fadeAndMoveCircle(circle);
       }, i * 100); // Stagger each circle by 100 milliseconds
   }
@@ -247,26 +242,6 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
   useEffect(() => {
     window.addEventListener('keydown', downHandler);
     window.addEventListener('keyup', upHandler);
-    if (arenaRef.current) {
-      // You can interact with the 'arena' div here
-      console.log('The arena div has loaded, and we can access it:', arenaRef.current);
-      const arenaRect = arenaRef.current.getBoundingClientRect();
-
-      console.log("arenaRect:", arenaRect);
-      console.log("SETTING ARENAX:", arenaRect.x);
-      setArenaX(arenaRect.x);
-      setArenaY(arenaRect.y);
-      setArenaWidth(arenaRef.current.offsetWidth);
-      setArenaHeight(arenaRef.current.offsetHeight);
-      setCenterX(arenaRef.current.offsetWidth / 2);
-      setCenterY(arenaRef.current.offsetHeight / 2);
-      console.log("SET:", arenaRef.current);
-      console.log("CENTERX:", centerX);
-      console.log("CENTERY:", centerY);
-      console.log("ArenaX:", arenaX);
-      console.log("ArenaY:", arenaY);
-      
-    }
 
     return () => {
       window.removeEventListener('keydown', downHandler);
@@ -349,24 +324,18 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
     };
   }, [socket, currentUser.uid, room]);
 
-  useEffect(() => {
-    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
-    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
-    console.log(arenaX);
-    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
-    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
-    const arenaRect = arenaRef.current.getBoundingClientRect();
+  function getArena() {
+    const arena = document.getElementById('arena');
+    const arenaRect = arena.getBoundingClientRect();
+    const arenaX = arenaRect.x;
+    const arenaY = arenaRect.y;
+    const arenaWidth = arena.offsetWidth;
+    const arenaHeight = arena.offsetHeight;
+    const centerX = arenaWidth / 2;
+    const centerY = arenaHeight / 2;
 
-    console.log("arenaRect:", arenaRect);
-    console.log("SETTING ARENAX:", arenaRect.x);
-    setArenaX(arenaRect.x);
-    setArenaY(arenaRect.y);
-    setArenaWidth(arenaRef.current.offsetWidth);
-    setArenaHeight(arenaRef.current.offsetHeight);
-    setCenterX(arenaRef.current.offsetWidth / 2);
-    setCenterY(arenaRef.current.offsetHeight / 2);
-    return () => {    };
-  }, [arenaX, arenaY]);
+    return {arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY};
+  }
 
   const convertLifeTo = async (elementToGet, event) => {
     event.preventDefault();
@@ -542,7 +511,7 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
           </div>
         </div>
         <div className="messages">
-          <div id="arena" className="arena" ref={arenaRef}>
+          <div id="arena" className="arena">
             <div className="container">
               <div className="lifeInCenter btn-4 anyElement">
                 <span>🌱</span>
