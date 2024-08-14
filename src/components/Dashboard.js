@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useSprings, animated } from '@react-spring/web';
+import { useDrag } from 'react-use-gesture';
+import clamp from 'lodash.clamp';
+import swap from 'lodash-move';
+
 import { Draggable } from "../lib";
 import {
   serverTimestamp,
@@ -33,6 +38,16 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [fortifyScore, setFortifyScore] = useState(0);
   const [lastSpellCastInRound, setLastSpellCastInRound] = useState(-1);
   const [canCastSpell, setCanCastSpell] = useState(true);
+
+  const arenaRef = useRef(null); // Initialize the ref with null
+
+  //const [arena, setArena] = useState()
+  const [arenaX, setArenaX] = useState(0);
+  const [arenaY, setArenaY] = useState(0);
+  const [arenaWidth, setArenaWidth] = useState(0);
+  const [arenaHeight, setArenaHeight] = useState(0);
+  const [centerX, setCenterX] = useState(0);
+  const [centerY, setCenterY] = useState(0);
 
   //console.log("SOCKET:", socket);
 
@@ -126,130 +141,88 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     setAttacking(targetPlayerIndex);
   };
 
-  function boomboom() {
-    //Clear any existing page
-    let battleArea = document.querySelector("#battle");
-    battleArea.innerHTML="";
-
-    var space=document.createElement("div");
-    var battleTitle=document.createElement("div");
-    var iterator=0;
-    var stars = 30;
-    var timer=100;
-
-    //Set container
-    space.setAttribute("id","space");
-    space.setAttribute("style","width:600px;height:300px;margin:auto;border:solid 1px #000;position:relative;overflow:hidden;background:#0000003d;border-radius:8px;margin-bottom:10px;color:#fff");
-    battleTitle.setAttribute("style","text-align:center;width:600px;height:20px;margin:auto;padding-top:12px;padding-bottom:10px;position:relative;overflow:hidden;background:#0000003d;border-radius:8px;color:#fff");
-    battleTitle.innerText="Battle!"
-    battleArea.appendChild(battleTitle);
-    battleArea.appendChild(space);
-
-    //Set interval and draw...
-    var interval = setInterval(function(){ drawStars(iterator,stars); }, timer);
-    drawStars(iterator, stars);
-
-    function drawStars(r,c) {
-        clearInterval(interval);
-
-        //a container for this set of stars
-        var starContainer=document.createElement("div");
-
-        //don't draw more if there are too many, it's got to go
-        if(iterator < 160) {
-            for(var i = 0; i < c; i++) {
-                var x,y;
-
-                if(iterator < 10) {
-                    x=300 + r * Math.cos(2 * Math.PI * i / c) * 0.7;
-                    y=150 + r * Math.sin(2 * Math.PI * i / c) * 0.7;
-                }
-
-                //add some randomness for the boom boom
-                if(iterator > 10) {
-                    x=300 + r * Math.cos(2 * Math.PI * i / c) * 0.7*Math.random();
-                    y=150 + r * Math.sin(2 * Math.PI * i / c) * 0.7*Math.random();
-                }
-
-                var bulletY = 150;
-                //Make a bullet
-                var bullet=document.createElement("div");
-                bullet.setAttribute("class","star");
-                bullet.setAttribute("style","font-size:25px; position:absolute; left:"+ iterator*2 +"px;top:"+ bulletY +"px;"+"color:blue");
-                bullet.textContent="●";
-                starContainer.appendChild(bullet);
-
-                var bullet2=document.createElement("div");
-                bullet2.setAttribute("class","star");
-                bullet2.setAttribute("style","font-size:25px; position:absolute; right:"+ iterator*2 +"px;top:"+ bulletY +"px;"+"color:red");
-                bullet2.textContent="●";
-                starContainer.appendChild(bullet2);
-
-                if (iterator > 100) {
-                  //Make a star
-                  var star=document.createElement("div");
-                  star.setAttribute("class","star");
-
-                  //Exploding stars are red, I hope
-                  var color = iterator < 120 ? "color:#fff" : "color:rgb("+parseInt(25*Math.random())+","+parseInt(255*Math.random())+","+parseInt(255*Math.random())+")";
-                  star.setAttribute("style","position:absolute; left:"+ x +"px;top:"+ y +"px;"+color);
-
-                  //Change the star character as boom boom gets bigger
-                  if (iterator <= 120) {
-                      star.textContent="*";
-                  }
-                  else if(iterator >120 & iterator <= 140) {
-                      star.textContent="o";
-                  }
-                  else {
-                      star.textContent="-";
-                  }
-                  //Add the star to its container
-                  starContainer.appendChild(star);
-                }
-            }
-        }
-        //draw the container
-        space.appendChild(starContainer);
-
-        //increment the iterator.  It's an iterator because we're using intervals and it's late.
-        iterator+=4;
-
-        //remove stars when we get too many
-        if(iterator > 50) {
-            space.removeChild(space.firstChild);
-        }
-        if(iterator < 220) { //do it all again
-            timer = timer > 10 ? timer-10 : timer;
-            interval=setInterval(function(){ drawStars(iterator,stars); }, timer);
-        }
-
-        //make sure it's actually empty
-        else {
-            //space.innerHTML="";
-            //battleArea.innerHTML="";
-
-            var returningTroopsX = 500 - (iterator);
-            var returningTroopsY = 145;
-            var goingLeftOrRight="left";
-            //Make a bullet
-            var returningTroops=document.createElement("div");
-            returningTroops.setAttribute("class","star");
-            returningTroops.setAttribute("style","font-size:30px;position:absolute;"+goingLeftOrRight+":"+ returningTroopsX +"px;top:"+ returningTroopsY +"px;"+"color:blue");
-            returningTroops.textContent="●";
-            starContainer.appendChild(returningTroops);
-
-            if(iterator < 720) { //do it all again
-              interval=setInterval(function(){ drawStars(iterator,stars); }, timer);
-            } else {
-              space.innerHTML="";
-            }
-        }
-    }
-}
+  function depictBattle(winnerLeftOrRight, leftTroopColor, rightTroopColor, whatsLeft) {
+    
+  }
 
   const [shiftHeld, setShiftHeld] = useState(false);
 
+
+  function animateCircles(circleCount, circleColor) {
+    for (let i = 0; i < circleCount; i++) {
+      // Stagger the creation of each circle
+      setTimeout(() => {
+
+        const circle = document.createElement('div');
+        circle.className = 'circle';
+        circle.style.backgroundColor = circleColor;
+
+        // Positioning circles along the top edge
+        circle.style.top = '0px';
+        circle.style.left = `${Math.random() * arenaWidth}px`; // Random position along the width
+
+        arenaRef.current.appendChild(circle);
+        moveCircle(circle);
+      }, i * 100); // Stagger each circle by 100 milliseconds
+    }
+
+    function moveCircle(circle) {
+        const interval = setInterval(function () {
+            const rect = circle.getBoundingClientRect();
+            const distX = Math.abs((rect.left + (rect.width / 2)) - centerX - arenaX);
+            const distY = Math.abs((rect.top + (rect.height / 2)) - centerY - arenaY);
+
+            if (distX < 40 && distY < 40) {
+                explodeCircle(circle);
+                clearInterval(interval);
+            }
+        }, 10);
+    }
+
+    function explodeCircle(circle) {
+        circle.style.transition = 'transform 0.25s, opacity 0.25s';
+        circle.style.transform = 'scale(2)';
+        circle.style.opacity = '0';
+        setTimeout(() => circle.remove(), 250); // Removes the circle after the effect
+    }
+}
+function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
+  for (let i = 0; i < circleCount; i++) {
+      setTimeout(() => {
+          const circle = document.createElement('div');
+          circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
+          circle.style.backgroundColor = circleColor;
+          circle.style.opacity = '0';  // Start fully transparent
+          circle.style.transform = 'scale(0.5)'; // Start smaller
+
+          const randomizer = Math.random() * 10 - 10; // Random deviation from center, range -50 to +50 pixels
+          const randomizer2 = Math.random() * 15 - 10; // Random deviation from center, range -50 to +50 pixels
+
+          // Positioning circles at the center
+          circle.style.top = `${centerY - 30 + (randomizer)}px`; // Adjusted for the circle's size
+          circle.style.left = `${centerX - 10 + (randomizer2)}px`;
+
+          arenaRef.current.appendChild(circle);
+          fadeAndMoveCircle(circle);
+      }, i * 100); // Stagger each circle by 100 milliseconds
+  }
+
+  function fadeAndMoveCircle(circle) {
+    circle.style.transition = 'top 2s, left 2s, opacity 4s, transform 4s';
+    circle.style.opacity = '1';  // Fade in
+    circle.style.transform = 'scale(1)'; // Grow to full size
+
+    setTimeout(() => {
+        const deviation = Math.random() * 100 - 50; // Random deviation from center, range -50 to +50 pixels
+        circle.style.top = '-20px'; // Move above the top edge
+        circle.style.left = `${centerX - 10 + deviation}px`; // Move to a random position along the x-axis
+    }, 500);  // Start moving after fully appearing
+
+    setTimeout(() => {
+        circle.remove();  // Remove circle from DOM after it moves out
+    }, 2500);  // Enough time to finish moving
+}
+}
 
   function downHandler({key}) {
     if (key === 'Shift') {
@@ -261,16 +234,40 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     if (key === 'Shift') {
       setShiftHeld(false);
     } else if (key === 'e') {
-      boomboom();
-      // for(let i = 0; i < 10; i++) {
-      //   setTimeout(boomboom, i*820);
-      // }
+      animateCircles(10, '#ff0000');
+    } else if (key === 'r') {
+      spawnAndMoveCircles(4, 'red', true);
+    } else if (key === 't') {
+      spawnAndMoveCircles(4, 'red', false);
+    } else {
+      console.log("pressed:", key);
     }
   }
 
   useEffect(() => {
     window.addEventListener('keydown', downHandler);
     window.addEventListener('keyup', upHandler);
+    if (arenaRef.current) {
+      // You can interact with the 'arena' div here
+      console.log('The arena div has loaded, and we can access it:', arenaRef.current);
+      const arenaRect = arenaRef.current.getBoundingClientRect();
+
+      console.log("arenaRect:", arenaRect);
+      console.log("SETTING ARENAX:", arenaRect.x);
+      setArenaX(arenaRect.x);
+      setArenaY(arenaRect.y);
+      setArenaWidth(arenaRef.current.offsetWidth);
+      setArenaHeight(arenaRef.current.offsetHeight);
+      setCenterX(arenaRef.current.offsetWidth / 2);
+      setCenterY(arenaRef.current.offsetHeight / 2);
+      console.log("SET:", arenaRef.current);
+      console.log("CENTERX:", centerX);
+      console.log("CENTERY:", centerY);
+      console.log("ArenaX:", arenaX);
+      console.log("ArenaY:", arenaY);
+      
+    }
+
     return () => {
       window.removeEventListener('keydown', downHandler);
       window.removeEventListener('keyup', upHandler);
@@ -285,6 +282,19 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     function onNewMessage(value) {
       if (value.room === room) {
         setMessages(messages => [...messages, value]);
+      }
+    }
+
+    function onBattleResults(value) {
+      if (value.room === room) {
+        console.log("BATTLE RESULTS:", value);
+        let winnerLeftOrRight = "left";
+        let whatsLeft = value.attackRemaining > 0 ? value.attackRemaining : value.defendRemaining;
+        if (value.attackRemaining == 0 && value.defendRemaining > 0) {
+          winnerLeftOrRight = "right";
+        }
+
+        depictBattle(winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft);
       }
     }
 
@@ -329,6 +339,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     }
 
     socket.on('newMessage', onNewMessage);
+    socket.on('battleResults', onBattleResults);
     socket.on('playerState', onPlayerState);
     socket.on('newRound', onNewRound);
     socket.on('gameResults', onGameResults);
@@ -337,6 +348,25 @@ export const Dashboard = ({ room, socket, currentUser }) => {
       socket.off('newMessage', onNewMessage);
     };
   }, [socket, currentUser.uid, room]);
+
+  useEffect(() => {
+    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
+    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
+    console.log(arenaX);
+    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
+    console.log("AHFDSKFDHSFKHGSKJFDHGKFJHGFKJD");
+    const arenaRect = arenaRef.current.getBoundingClientRect();
+
+    console.log("arenaRect:", arenaRect);
+    console.log("SETTING ARENAX:", arenaRect.x);
+    setArenaX(arenaRect.x);
+    setArenaY(arenaRect.y);
+    setArenaWidth(arenaRef.current.offsetWidth);
+    setArenaHeight(arenaRef.current.offsetHeight);
+    setCenterX(arenaRef.current.offsetWidth / 2);
+    setCenterY(arenaRef.current.offsetHeight / 2);
+    return () => {    };
+  }, [arenaX, arenaY]);
 
   const convertLifeTo = async (elementToGet, event) => {
     event.preventDefault();
@@ -397,6 +427,55 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     setCanCastSpell(lastSpellCastInRound < roundNumber);
   }, [roundNumber, lastSpellCastInRound])
 
+  const fn = (order, active = false, originalIndex = 0, curIndex = 0, y = 0) => (index) => {
+
+  let middlePadding = index > 1 ? 150 : 0;
+  return active && index === originalIndex
+    ? {
+        y: curIndex * 110 + y + middlePadding,
+        scale: 1.1,
+        zIndex: 1,
+        shadow: 15,
+        immediate: (key) => key === 'y' || key === 'zIndex',
+      }
+    : {
+        y: order.indexOf(index) * 110 + middlePadding,
+        scale: 1,
+        zIndex: 0,
+        shadow: 1,
+        immediate: false,
+      }
+  }
+
+  function PrettyDraggableList({ items }) {
+    const order = useRef(items.map((_, index) => index)) // Store indicies as a local ref, this represents the item order
+    const [springs, api] = useSprings(items.length, fn(order.current)) // Create springs, each corresponds to an item, controlling its transform, scale, etc.
+    const bind = useDrag(({ args: [originalIndex], active, movement: [, y] }) => {
+      const curIndex = order.current.indexOf(originalIndex)
+      const curRow = clamp(Math.round((curIndex * 100 + y) / 100), 0, items.length - 1)
+      const newOrder = swap(order.current, curIndex, curRow)
+      api.start(fn(newOrder, active, originalIndex, curIndex, y)) // Feed springs new style data, they'll animate the view without causing a single render
+      if (!active) order.current = newOrder
+    })
+    return (
+      <div className={"content"} style={{ height: items.length * 50 }}>
+        {springs.map(({ zIndex, shadow, y, scale }, i) => (
+          <animated.div
+            {...bind(i)}
+            key={i}
+            style={{
+              zIndex,
+              boxShadow: shadow.to(s => `rgba(0, 0, 0, 0.15) 0px ${s}px ${2 * s}px 0px`),
+              y,
+              scale,
+            }}
+            children={items[i]}
+          />
+        ))}
+      </div>
+    )
+  }
+
   if (gameIsOver) {
     return (
       <div className="dashboard-app">
@@ -437,27 +516,33 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     <>
       <div className="dashboard-app">
         <div className="header pb-2 mb-2">
-          <h2>Game: {room || "Game"}</h2>
-          <h3>Round: {roundNumber}</h3>
-          <div className="weather">Weather: {roundWeather}</div>
+          <div className="messages">
+            <div className="pl-1 top-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
+            { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
+              <input
+                type="text"
+                value={nicknameInput}
+                onChange={(event) => setNicknameInput(event.target.value)}
+                className="new-nickname-input"
+                placeholder="Edit nickname"
+              />
+              <button type="submit" className="nickname-button">⤴</button>
+            </form> ) }
+            </div>
+
+            <div className="attack-and-defense js-explosion">
+              <div>{Math.round(empowerScore / 100)} ⚔️</div>
+              <div>{Math.round(fortifyScore / 100)} 🛡️</div>
+            </div>
+          </div>
+          <div className="weather">
+            <p><b>Room:</b> {room}</p>
+            <p><b>Round:</b> {roundNumber}</p>
+            <p><b>Weather:</b> {roundWeather}</p>
+          </div>
         </div>
         <div className="messages">
-          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small></h3>
-          { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
-            <input
-              type="text"
-              value={nicknameInput}
-              onChange={(event) => setNicknameInput(event.target.value)}
-              className="new-nickname-input"
-              placeholder="Edit nickname"
-            />
-            <button type="submit" className="nickname-button">⤴</button>
-          </form> ) }
-          <div className="attack-and-defense js-explosion">
-            <div>{Math.round(empowerScore / 100)} ⚔️</div>
-            <div>{Math.round(fortifyScore / 100)} 🛡️</div>
-          </div>
-          <div id="playArea" className="playArea">
+          <div id="arena" className="arena" ref={arenaRef}>
             <div className="container">
               <div className="lifeInCenter btn-4 anyElement">
                 <span>🌱</span>
@@ -470,6 +555,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
                   <div id="fireOrderDiv" data-elch={"f"} className="anyElement"><span>🔥</span></div>
                   <div id="fireOrderDiv" data-elch={"w"}  className="anyElement"><span>💧</span></div>
                 </Draggable>
+                {/* <PrettyDraggableList items={'🔥 ⛰️ 💧 💨'.split(' ')} /> */}
               </div>
               <div className="empower element-buttons">
                 { airScore > 0 && earthScore > 0 && fireScore > 0 &&
@@ -528,6 +614,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
                   <small>{Math.round(airPrice * 100) / 100}</small>
               </div>
             </div>
+            <div className="glowz"></div>
+            <canvas id="canvas1"></canvas>
             <div className="neighborhood-buttons">
               { neighborhood.length > 0 &&
               (

@@ -28,8 +28,15 @@
     align-items: flex-start;
     width: 95%;
     height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
+  }
+
+  .top-1 {
+    position: absolute;
+    top: 25px;
+
+    font-size: 1.17em;
+    font-weight: bold;
   }
 
   .mt-n1 {
@@ -82,15 +89,15 @@
   .attack-and-defense {
     position: absolute;
     right: 20px;
-    margin-top: 10px;
+    top: 150px;
     font-size: 20px;
   }
 
   .weather {
     text-align: right;
-    margin-top: -40px;
     margin-right: 8px;
-    margin-bottom: 10px;
+    margin-top: -20px;
+    margin-bottom: -10px;
   }
 
   .life-score {
@@ -191,20 +198,92 @@
     margin-right: 10px;
   }
 
-  .playArea {
+  .arena {
     display: flex;
     flex-direction: row;
+    position: relative;
+    top: -50px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   @media (max-width: 720px) {
-    .playArea {
+    .arena {
       flex-direction: column;
     }
     .neighborhood-buttons {
       display: flex;
     }
   }
+
+  #arena {
+    position: relative; /* Parent must be positioned */
+    /* width: 300px; /* Set your desired dimensions */
+    /* height: 300px; */
+    /* border: 1px solid black; */
+    overflow: hidden; /* Keeps circles within the arena */
+}
+
+  .circle {
+      position: absolute;
+      z-index: 100;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      animation: moveCircle 2s forwards; /* Animation lasts 2 seconds */
+      animation: moveCircle 2s forwards, wobble 1s infinite;
+    }
+
+    .lootcircle {
+      position: absolute;
+      z-index: 100;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      box-shadow: 0 0 10px 3px #00ff00; /* Green glow */
+      animation: wobble 1s infinite;
+    }
+
+    .attackingcircle {
+      position: absolute;
+      z-index: 100;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      animation: wobble 1s infinite;
+    }
+
+  @keyframes moveCircle {
+      from {
+          /* initial position set by JavaScript */
+      }
+      to {
+          left: 50%; /* Moves to center of the arena */
+          top: 50%;
+          transform: translate(-50%, -50%); /* Centers the circle */
+      }
+  }
   
+@keyframes wobble {
+  0%, 100% {
+      border-radius: 50%;
+  }
+  20% {
+      border-radius: 60% 40% 40% 70%;
+  }
+  30% {
+    border-radius: 44% 50% 35% 60%;
+  }
+  50% {
+      border-radius: 30% 70% 50% 50%;
+  }
+  70% {
+      border-radius: 50% 60% 30% 44%;
+  }
+  80% {
+      border-radius: 40% 60% 60% 40%;
+  }
+}
   .element-buttons {
     margin: auto;
     display: flex;
@@ -323,9 +402,9 @@
   }
 
   .new-nickname {
-    margin-left: 20px;
-    margin-top: -10px;
     z-index:4;
+    top: 35px;
+    position: absolute;
   }
 
   .new-nickname-input {
@@ -764,10 +843,72 @@ right: 310px;
   min-width: 600px;
   position: relative;
   margin-top: -75px;
-  height: 600px;
+  left: 20px;
+  top: -30px;
+  height: 620px;
   margin-bottom: 50px;
+  margin: auto;
+}
+
+#canvas1 {
+  position: absolute;
+  top: 30px;
+  left: -100px;
+  z-index: 3;
+  pointer-events: none;
 }
 
 #battle {
   margin: auto;
+  /* display: grid;
+  grid-template-columns: 10px 1fr 10px; */
+}
+
+.content {
+  position: relative;
+  width: 200px;
+  height: 100px;
+}
+
+.content > div {
+  position: absolute;
+  width: 70px;
+  height: 80px;
+  /* transform-origin: 50% 50% 0px; */
+  border-radius: 50%;
+  color: white;
+  line-height: 40px;
+  padding-left: 35px;
+  font-size: 33px;
+  background: lightblue;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  touch-action: none;
+  user-select: none;
+  cursor:move;
+}
+
+.content > div:nth-child(1) {
+  background: linear-gradient(135deg, #f6d365 0%, #f7572a 100%);
+}
+.content > div:nth-child(2) {
+  background: linear-gradient(135deg, #422a17 0%, #3b2b05 100%);
+
+}
+.content > div:nth-child(3) {
+  background: linear-gradient(135deg, #5ee7df 0%, #b490ca 100%);
+  margin-bottom: 70px;
+}
+.content > div:nth-child(4) {
+  background: linear-gradient(135deg, #c3cfe2 0%, #c3cfe2 100%);
+}
+
+.glow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 100px;
+  left: 100px;
+  border-radius: 50%;
+  box-shadow: 0 0 150px #fff, 0 0 150px #fff;
 }

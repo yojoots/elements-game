@@ -26,6 +26,10 @@ body {
   width: 100%;
 }
 
+h2 {
+  margin-block: auto;
+}
+
 .room {
   display: flex;
   flex-direction: column;

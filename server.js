@@ -196,6 +196,20 @@ function letterToElement(letter) {
     }
 }
 
+function colorFromElement(element) {
+    if (element === "air") {
+        return "gray"
+    } else if (element === "earth") {
+        return "brown"
+    } else if (element === "fire") {
+        return "red"
+    } else if (element === "water") {
+        return "blue"
+    } else {
+        return "black"
+    }
+}
+
 function hashCode(string){
     var hash = 0;
     for (var i = 0; i < string.length; i++) {
@@ -620,17 +634,23 @@ function combat(attackingArmy, defendingArmy, weather) {
     if (totalAttackScore > totalDefendScore) {
         // Attacker wins
         return {
+            "leftTroopColor": colorFromElement(attackingArmy.element),
+            "rightTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": totalAttackScore - totalDefendScore,
             "defendRemaining": 0
         }
     } else if (totalDefendScore > totalAttackScore) {
         // Defender wins
         return {
+            "leftTroopColor": colorFromElement(attackingArmy.element),
+            "rightTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
             "defendRemaining": totalDefendScore - totalAttackScore
         }
     } else {
         return {
+            "leftTroopColor": colorFromElement(attackingArmy.element),
+            "rightTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
             "defendRemaining": 0
         }
@@ -806,7 +826,9 @@ function processRoundAndProceed(roomId) {
 
                 let timeString = new Date().getTime().toString();
                 let battleResultsHash = hashCode(JSON.stringify(battleResults) + timeString);
-                io.to(roomId).emit('newMessage', {room: roomId, text: JSON.stringify(battleResults), user: "SYSTEM", color: "BLACK", id: battleResultsHash, key: battleResultsHash});
+                //io.to(roomId).emit('newMessage', {room: roomId, text: JSON.stringify(battleResults), user: "SYSTEM", color: "BLACK", id: battleResultsHash, key: battleResultsHash});
+                io.to(defendingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
+                io.to(playingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
                 attackingStrengthAndType = topTroops(playingPlayer, "attack");
                 defendingStrengthAndType = topTroops(defendingPlayer, "defend");
             }
