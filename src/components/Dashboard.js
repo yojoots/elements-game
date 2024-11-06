@@ -29,7 +29,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [waterPrice, setWaterPrice] = useState(0.25);
   const [finalWinnings, setFinalWinnings] = useState(0.00);
   const [fullWinningsStats, setFullWinningsStats] = useState([]);
-  const [lifeScore, setLifeScore] = useState(2000);
+  const [lifeScore, setLifeScore] = useState(1000);
   const [airScore, setAirScore] = useState(0);
   const [earthScore, setEarthScore] = useState(0);
   const [fireScore, setFireScore] = useState(0);
@@ -38,33 +38,24 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [fortifyScore, setFortifyScore] = useState(0);
   const [lastSpellCastInRound, setLastSpellCastInRound] = useState(-1);
   const [canCastSpell, setCanCastSpell] = useState(true);
+  const [alreadyDepictedBattles, setAlreadyDepictedBattles] = useState([]);
+  const airScoreRef = useRef(airScore);
+  const earthScoreRef = useRef(earthScore);
+  const fireScoreRef = useRef(fireScore);
+  const waterScoreRef = useRef(waterScore);
+  const alreadyDepBat = useRef(alreadyDepictedBattles);
+  const [processedEvents, setProcessedEvents] = useState(new Set());
 
-  //console.log("SOCKET:", socket);
+  useEffect(() => {
+    alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes
+}, [alreadyDepictedBattles]);
 
-  // const messagesRef = collection(db, "messages");
-
-  // useEffect(() => {
-  //   const queryMessages = query(
-  //     messagesRef,
-  //     where("room", "==", room),
-  //     orderBy("createdAt")
-  //   );
-  //   const unsubscribe = onSnapshot(queryMessages, (snapshot) => {
-  //     let messages = [];
-  //     snapshot.forEach((doc) => {
-  //       messages.push({ ...doc.data(), id: doc.id });
-  //     });
-  //     console.log(messages);
-  //     console.log("WE UNSUBD");
-  //     setMessages(messages);
-  //   });
-
-  //   return () => unsubscribe();
-  // }, []);
-
-  // function onGameStateChange(value) {
-  //   setMessages(messages => [...messages, value]);
-  // }
+  useEffect(() => {
+    airScoreRef.current = airScore; // Update ref when state changes
+    earthScoreRef.current = earthScore; // Update ref when state changes
+    fireScoreRef.current = fireScore; // Update ref when state changes
+    waterScoreRef.current = waterScore; // Update ref when state changes
+}, [airScore, earthScore, fireScore, waterScore]);
 
   let USDollar = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -131,21 +122,73 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     setAttacking(targetPlayerIndex);
   };
 
-  function depictBattle(winnerLeftOrRight, leftTroopColor, rightTroopColor, whatsLeft) {
-    
+  function colorToElementScore(color) {
+    if (color === "gray") {
+      return airScoreRef.current;
+    } else if (color === "brown") {
+      return earthScoreRef.current;
+    } else if (color === "red") {
+      return fireScoreRef.current;
+    } else if (color === "blue") {
+      return waterScoreRef.current;
+    } else {
+      return 0
+    }
+}
+
+  function depictBattle(battleId, winnerLeftOrRight, leftTroopColor, rightTroopColor, whatsLeft, lifeLooted) {
+
+    const attackingCircleCount = ((whatsLeft + colorToElementScore(rightTroopColor)) / 100);
+
+    console.log("ATTACKING:", attackingCircleCount);
+    console.log("TO LOOT:", lifeLooted);
+    if (winnerLeftOrRight == "left") {
+      // Attacker wins and loots
+      // We are the defender
+      //depictBattle(winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft,value.lifeLooted);
+      animateCircles(attackingCircleCount, leftTroopColor, false); // incoming!
+      setTimeout(() => {
+        spawnAndMoveCircles((lifeLooted / 100), leftTroopColor, true); // looting!
+      }, (attackingCircleCount * 220));
+    } else {
+      spawnAndMoveCircles(attackingCircleCount, 'red', false); // outgoing/attacking
+      setTimeout(() => {
+        animateCircles((lifeLooted / 100), leftTroopColor, true); // looting!
+      }, (attackingCircleCount * 220));
+    }
+
+    // spawnAndMoveCircles(4, 'red', true); // looting!
+    // spawnAndMoveCircles(4, 'red', false); // outgoing/attacking
   }
+
+  function depictAttack(battleId, winnerLeftOrRight, leftTroopColor, rightTroopColor, whatsLeft, lifeLooted) {
+    const attackingCircleCount = (colorToElementScore(leftTroopColor));
+    spawnAndMoveCircles(attackingCircleCount, leftTroopColor, false); // outgoing/attacking
+
+    console.log("ATTACKINGG:", attackingCircleCount);
+    console.log("LOOTING:", lifeLooted);
+    if (winnerLeftOrRight == "left") {
+      // Attacker wins and loots
+      // We are the attacker
+      setTimeout(() => {
+        animateCircles((lifeLooted / 100), leftTroopColor, true); // looting!
+      }, (attackingCircleCount * 0.022) + 2000);
+    }
+  }
+
 
   const [shiftHeld, setShiftHeld] = useState(false);
 
 
-  function animateCircles(circleCount, circleColor) {
+  function animateCircles(circleCount, circleColor, isLooting) {
+    console.log("ANIMATING:", circleCount);
     for (let i = 0; i < circleCount; i++) {
       // Stagger the creation of each circle
       setTimeout(() => {
         const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
 
         const circle = document.createElement('div');
-        circle.className = 'circle';
+        circle.className = isLooting ? 'alootcircle' : 'circle';
         circle.style.backgroundColor = circleColor;
 
         // Positioning circles along the top edge
@@ -159,15 +202,22 @@ export const Dashboard = ({ room, socket, currentUser }) => {
 
     function moveCircle(circle) {
       const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
-
+        circle.dataset.moved = 0;
         const interval = setInterval(function () {
             const rect = circle.getBoundingClientRect();
             const distX = Math.abs((rect.left + (rect.width / 2)) - centerX - arenaX);
             const distY = Math.abs((rect.top + (rect.height / 2)) - centerY - arenaY);
-
-            if (distX < 40 && distY < 40) {
+            circle.dataset.moved = Number(circle.dataset.moved) + 1;
+            if (distX < 50 && distY < 50) {
                 explodeCircle(circle);
                 clearInterval(interval);
+            }
+
+            // Backup for the weird case when the circles don't explode
+            // even when they've reached the center
+            if (circle.dataset.moved > 100) {
+              explodeCircle(circle);
+              clearInterval(interval);
             }
         }, 10);
     }
@@ -181,8 +231,9 @@ export const Dashboard = ({ room, socket, currentUser }) => {
 }
 function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
   const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
+  const smallCircleCount = circleCount / 100;
 
-  for (let i = 0; i < circleCount; i++) {
+  for (let i = 0; i < smallCircleCount; i++) {
       setTimeout(() => {
           const circle = document.createElement('div');
           circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
@@ -226,17 +277,22 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
   }
 
   function upHandler({key}) {
-    if (key === 'Shift') {
-      setShiftHeld(false);
-    } else if (key === 'e') {
-      animateCircles(10, '#ff0000');
-    } else if (key === 'r') {
-      spawnAndMoveCircles(4, 'red', true);
-    } else if (key === 't') {
-      spawnAndMoveCircles(4, 'red', false);
-    } else {
-      console.log("pressed:", key);
-    }
+    // if (key === 'Shift') {
+    //   setShiftHeld(false);
+    // } else if (key === 'e') {
+    //   animateCircles(10, '#ff0000', false);
+    // } else if (key === 'r') {
+    //   spawnAndMoveCircles(4, 'red', true);
+    // } else if (key === 't') {
+    //   spawnAndMoveCircles(4, 'red', false);
+    // } else if (key === 'a') {
+    //   depictAttack("lol", "left", "brown", "blue", 1000, 200);
+    //   //animateCircles(10, 'yellow', true);
+
+    //   setAlreadyDepictedBattles(prevIds => [...prevIds, "lol"]);
+    // } else {
+    //   //console.log("pressed:", key);
+    // }
   }
 
   useEffect(() => {
@@ -251,6 +307,7 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
 
   useEffect(() => {
     socket.on("connection", (room) => {
+      console.log("JOINING ROOM:", room);
       socket.join(room);
     });
 
@@ -261,16 +318,32 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
     }
 
     function onBattleResults(value) {
-      if (value.room === room) {
-        console.log("BATTLE RESULTS:", value);
-        let winnerLeftOrRight = "left";
-        let whatsLeft = value.attackRemaining > 0 ? value.attackRemaining : value.defendRemaining;
-        if (value.attackRemaining == 0 && value.defendRemaining > 0) {
-          winnerLeftOrRight = "right";
-        }
+      const eventId = value.id;
 
-        depictBattle(winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft);
+      // Check if the event has already been processed
+      if (!processedEvents.has(eventId)) {
+        console.log("OBR");
+        if (value.room === room && !alreadyDepBat.current.includes(value.id)) {
+          setAlreadyDepictedBattles(prevIds => [...prevIds, value.id]);
+
+          console.log("BATTLE RESULTS:", value);
+          console.log("alreadyDepictedBattles:", alreadyDepBat.current);
+          let winnerLeftOrRight = "left";
+          let whatsLeft = value.attackRemaining > 0 ? value.attackRemaining : value.defendRemaining;
+          if (value.attackRemaining == 0 && value.defendRemaining > 0) {
+            winnerLeftOrRight = "right";
+          }
+
+          if (value.attackingPlayerId !== currentUser.uid) {
+            // We are the defender
+            depictBattle(value.id, winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft,value.lifeLooted);
+          } else {
+            console.log("DEPICTING ATTACK");
+            depictAttack(value.id, winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft,value.lifeLooted);
+          }
+        }
       }
+      setProcessedEvents((prevSet) => new Set(prevSet).add(eventId));
     }
 
     const onPlayerState = (value) => {
@@ -321,6 +394,11 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
 
     return () => {
       socket.off('newMessage', onNewMessage);
+      socket.off('battleResults', onBattleResults);
+      socket.off('playerState', onPlayerState);
+      socket.off('newRound', onNewRound);
+      socket.off('gameResults', onGameResults);
+
     };
   }, [socket, currentUser.uid, room]);
 
@@ -342,9 +420,9 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
 
     let convertAmount = 1;
 
-    if (shiftHeld) {
-      convertAmount = 10;
-    }
+    // if (shiftHeld) {
+    //   convertAmount = 10;
+    // }
 
     socket.emit("convert", {
         createdAt: serverTimestamp(),
@@ -585,7 +663,8 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
             </div>
             <div className="glowz"></div>
             <canvas id="canvas1"></canvas>
-            <div className="neighborhood-buttons">
+          </div>
+          <div className="neighborhood-buttons">
               { neighborhood.length > 0 &&
               (
                 <span>Attack:</span>
@@ -601,7 +680,6 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
                 }))
               }
             </div>
-          </div>
           <div id="battle"></div>
           <div id="trollbox">
           {messages.map((message) => (

@@ -234,6 +234,17 @@
       animation: moveCircle 2s forwards, wobble 1s infinite;
     }
 
+    .alootcircle {
+      position: absolute;
+      z-index: 100;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      box-shadow: 0 0 10px 3px #00ff00; /* Green glow */
+      animation: moveCircle 2s forwards; /* Animation lasts 2 seconds */
+      animation: moveCircle 2s forwards, wobble 1s infinite;
+    }
+
     .lootcircle {
       position: absolute;
       z-index: 100;

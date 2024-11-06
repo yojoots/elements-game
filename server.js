@@ -5,6 +5,9 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const util = require('util')
 const fs = require('node:fs');
+const crypto = require('crypto');
+
+const LIFE_SCORE_MULTIPLIER = 1.5;
 
 const io = new Server(server, {
     cors: {
@@ -47,14 +50,14 @@ const initPlayer = (userId, playerIndex) => {
         isScrying: false,
         attacking: "",
         order: "aefw",
-        life: 2000,
+        life: 1000,
         air: 0,
         earth: 0,
         fire: 0,
         water: 0,
         empower: 0,
         fortify: 0,
-        winnings: 20.00
+        winnings: 10.00
     }
 }
 
@@ -96,7 +99,7 @@ const initGame = (roomId) => {
         waterPrice: 0.25,
         players: [],
         maxPlayers: 10,
-        ante: 20.00,
+        ante: 10.00,
         weather: "clear",
         roundDuration: 30,
         allMoveHistory: ""
@@ -573,7 +576,7 @@ io.on('connection', (socket) => {
     });
 });
 
-function combat(attackingArmy, defendingArmy, weather) {
+function combat(attackingArmy, defendingArmy, weather, defenderLife) {
     let attackMultiplier = 1
     let defendMultiplier = 1
 
@@ -630,29 +633,36 @@ function combat(attackingArmy, defendingArmy, weather) {
 
     console.log(`Total (${attackingArmy.element}) Attack Score: ${totalAttackScore}`)
     console.log(`Total (${defendingArmy.element}) Defend Score: ${totalDefendScore}`)
+    const uniqueId = crypto.randomBytes(16).toString('hex');
 
     if (totalAttackScore > totalDefendScore) {
         // Attacker wins
         return {
+            "id": uniqueId,
             "leftTroopColor": colorFromElement(attackingArmy.element),
             "rightTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": totalAttackScore - totalDefendScore,
-            "defendRemaining": 0
+            "defendRemaining": 0,
+            "lifeLooted": Math.min(defenderLife, totalAttackScore - totalDefendScore)
         }
     } else if (totalDefendScore > totalAttackScore) {
         // Defender wins
         return {
+            "id": uniqueId,
             "leftTroopColor": colorFromElement(attackingArmy.element),
             "rightTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
-            "defendRemaining": totalDefendScore - totalAttackScore
+            "defendRemaining": totalDefendScore - totalAttackScore,
+            "lifeLooted": 0
         }
     } else {
         return {
+            "id": uniqueId,
             "leftTroopColor": colorFromElement(attackingArmy.element),
             "rightTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
-            "defendRemaining": 0
+            "defendRemaining": 0,
+            "lifeLooted": 0
         }
     }
 }
@@ -819,7 +829,7 @@ function processRoundAndProceed(roomId) {
             let attackingStrengthAndType = topTroops(playingPlayer, "attack");
             let defendingStrengthAndType = topTroops(defendingPlayer, "defend");
             while (attackingStrengthAndType.amount > 0 && defendingStrengthAndType.amount > 0) {
-                battleResults = combat({size: attackingStrengthAndType.amount, element: attackingStrengthAndType.troopType}, {size: defendingStrengthAndType.amount, element: defendingStrengthAndType.troopType}, gameState.weather);
+                battleResults = combat({size: attackingStrengthAndType.amount, element: attackingStrengthAndType.troopType}, {size: defendingStrengthAndType.amount, element: defendingStrengthAndType.troopType}, gameState.weather, defendingPlayer.life);
                 
                 playingPlayer[attackingStrengthAndType.troopType] = battleResults.attackRemaining;
                 defendingPlayer[defendingStrengthAndType.troopType] = battleResults.defendRemaining;
@@ -827,8 +837,10 @@ function processRoundAndProceed(roomId) {
                 let timeString = new Date().getTime().toString();
                 let battleResultsHash = hashCode(JSON.stringify(battleResults) + timeString);
                 //io.to(roomId).emit('newMessage', {room: roomId, text: JSON.stringify(battleResults), user: "SYSTEM", color: "BLACK", id: battleResultsHash, key: battleResultsHash});
-                io.to(defendingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
-                io.to(playingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
+                console.log('Emitting battleResults:', battleResultsHash);
+
+                io.to(defendingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
+                io.to(playingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
                 attackingStrengthAndType = topTroops(playingPlayer, "attack");
                 defendingStrengthAndType = topTroops(defendingPlayer, "defend");
             }
@@ -850,7 +862,7 @@ function processRoundAndProceed(roomId) {
 
     // Now double everyone's life and alert them of playerState changes
     for (const player of gameState.players) {
-        player.life = player.life * 2;
+        player.life = player.life * LIFE_SCORE_MULTIPLIER;
         player.attacking = "";
         player.isScrying = false;
         generateNeighborhood(gameState, player.playerIndex);
