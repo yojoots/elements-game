@@ -639,8 +639,8 @@ function combat(attackingArmy, defendingArmy, weather, defenderLife) {
         // Attacker wins
         return {
             "id": uniqueId,
-            "leftTroopColor": colorFromElement(attackingArmy.element),
-            "rightTroopColor": colorFromElement(defendingArmy.element),
+            "attackTroopColor": colorFromElement(attackingArmy.element),
+            "defendTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": totalAttackScore - totalDefendScore,
             "defendRemaining": 0,
             "lifeLooted": Math.min(defenderLife, totalAttackScore - totalDefendScore)
@@ -649,8 +649,8 @@ function combat(attackingArmy, defendingArmy, weather, defenderLife) {
         // Defender wins
         return {
             "id": uniqueId,
-            "leftTroopColor": colorFromElement(attackingArmy.element),
-            "rightTroopColor": colorFromElement(defendingArmy.element),
+            "attackTroopColor": colorFromElement(attackingArmy.element),
+            "defendTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
             "defendRemaining": totalDefendScore - totalAttackScore,
             "lifeLooted": 0
@@ -658,8 +658,8 @@ function combat(attackingArmy, defendingArmy, weather, defenderLife) {
     } else {
         return {
             "id": uniqueId,
-            "leftTroopColor": colorFromElement(attackingArmy.element),
-            "rightTroopColor": colorFromElement(defendingArmy.element),
+            "attackTroopColor": colorFromElement(attackingArmy.element),
+            "defendTroopColor": colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
             "defendRemaining": 0,
             "lifeLooted": 0
@@ -839,8 +839,8 @@ function processRoundAndProceed(roomId) {
                 //io.to(roomId).emit('newMessage', {room: roomId, text: JSON.stringify(battleResults), user: "SYSTEM", color: "BLACK", id: battleResultsHash, key: battleResultsHash});
                 console.log('Emitting battleResults:', battleResultsHash);
 
-                io.to(defendingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
-                io.to(playingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, leftTroopColor: battleResults.leftTroopColor, rightTroopColor: battleResults.rightTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
+                io.to(defendingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, attackTroopColor: battleResults.attackTroopColor, defendTroopColor: battleResults.defendTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
+                io.to(playingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, attackTroopColor: battleResults.attackTroopColor, defendTroopColor: battleResults.defendTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
                 attackingStrengthAndType = topTroops(playingPlayer, "attack");
                 defendingStrengthAndType = topTroops(defendingPlayer, "defend");
             }

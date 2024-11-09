@@ -136,24 +136,24 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     }
 }
 
-  function depictBattle(battleId, winnerLeftOrRight, leftTroopColor, rightTroopColor, whatsLeft, lifeLooted) {
+  function depictBattle(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
 
-    const attackingCircleCount = ((whatsLeft + colorToElementScore(rightTroopColor)) / 100);
+    const attackingCircleCount = ((whatsLeft + colorToElementScore(defendTroopColor)) / 100);
 
     console.log("ATTACKING:", attackingCircleCount);
     console.log("TO LOOT:", lifeLooted);
     if (winnerLeftOrRight == "left") {
       // Attacker wins and loots
       // We are the defender
-      //depictBattle(winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft,value.lifeLooted);
-      animateCircles(attackingCircleCount, leftTroopColor, false); // incoming!
+      //depictBattle(winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
+      animateCircles(attackingCircleCount, attackTroopColor, false); // incoming!
       setTimeout(() => {
-        spawnAndMoveCircles((lifeLooted / 100), leftTroopColor, true); // looting!
+        spawnAndMoveCircles((lifeLooted / 100), attackTroopColor, true); // looting!
       }, (attackingCircleCount * 220));
     } else {
       spawnAndMoveCircles(attackingCircleCount, 'red', false); // outgoing/attacking
       setTimeout(() => {
-        animateCircles((lifeLooted / 100), leftTroopColor, true); // looting!
+        animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
       }, (attackingCircleCount * 220));
     }
 
@@ -161,9 +161,9 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     // spawnAndMoveCircles(4, 'red', false); // outgoing/attacking
   }
 
-  function depictAttack(battleId, winnerLeftOrRight, leftTroopColor, rightTroopColor, whatsLeft, lifeLooted) {
-    const attackingCircleCount = (colorToElementScore(leftTroopColor));
-    spawnAndMoveCircles(attackingCircleCount, leftTroopColor, false); // outgoing/attacking
+  function depictAttack(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
+    const attackingCircleCount = (colorToElementScore(attackTroopColor));
+    spawnAndMoveCircles(attackingCircleCount, attackTroopColor, false); // outgoing/attacking
 
     console.log("ATTACKINGG:", attackingCircleCount);
     console.log("LOOTING:", lifeLooted);
@@ -171,7 +171,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
       // Attacker wins and loots
       // We are the attacker
       setTimeout(() => {
-        animateCircles((lifeLooted / 100), leftTroopColor, true); // looting!
+        animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
       }, (attackingCircleCount * 0.022) + 2000);
     }
   }
@@ -336,10 +336,10 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
 
           if (value.attackingPlayerId !== currentUser.uid) {
             // We are the defender
-            depictBattle(value.id, winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft,value.lifeLooted);
+            depictBattle(value.id, winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
           } else {
             console.log("DEPICTING ATTACK");
-            depictAttack(value.id, winnerLeftOrRight,value.leftTroopColor,value.rightTroopColor,whatsLeft,value.lifeLooted);
+            depictAttack(value.id, winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
           }
         }
       }
