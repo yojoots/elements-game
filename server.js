@@ -828,7 +828,9 @@ function processRoundAndProceed(roomId) {
             console.log(`Player ${playingPlayer.playerIndex} (${playingPlayer.nickname}) ATTACKING THE DEFENDER: ${defendingPlayer.playerIndex} (${defendingPlayer.nickname})`);
             let attackingStrengthAndType = topTroops(playingPlayer, "attack");
             let defendingStrengthAndType = topTroops(defendingPlayer, "defend");
-            while (attackingStrengthAndType.amount > 0 && defendingStrengthAndType.amount > 0) {
+            let firstPassShouldGoAnyway = defendingStrengthAndType.amount == 0;
+
+            while (attackingStrengthAndType.amount > 0 && (defendingStrengthAndType.amount > 0 || firstPassShouldGoAnyway)) {
                 battleResults = combat({size: attackingStrengthAndType.amount, element: attackingStrengthAndType.troopType}, {size: defendingStrengthAndType.amount, element: defendingStrengthAndType.troopType}, gameState.weather, defendingPlayer.life);
                 
                 playingPlayer[attackingStrengthAndType.troopType] = battleResults.attackRemaining;
@@ -843,6 +845,7 @@ function processRoundAndProceed(roomId) {
                 io.to(playingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, attackTroopColor: battleResults.attackTroopColor, defendTroopColor: battleResults.defendTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
                 attackingStrengthAndType = topTroops(playingPlayer, "attack");
                 defendingStrengthAndType = topTroops(defendingPlayer, "defend");
+                firstPassShouldGoAnyway = false;
             }
 
             if (attackingStrengthAndType.amount > 0) {
@@ -887,15 +890,33 @@ function processRoundAndProceed(roomId) {
         waterPrice: gameState.waterPrice,
     });
 }
+const COUNTDOWN_DURATION = 10; // seconds
 
 setInterval(() => {
     for (const [roomId, gameState] of Object.entries(knownGameStates)) {
         if (gameState.isTicking) {
-            console.log(`Ticking and proceedings to round ${gameState.round} in game ID: ${roomId}`);
-            processRoundAndProceed(roomId)
+            // Initialize remainingTime if it doesn't exist
+            if (gameState.remainingTime === undefined) {
+                gameState.remainingTime = COUNTDOWN_DURATION;
+            }
+
+            gameState.remainingTime -= 1;
+
+            if (gameState.remainingTime <= 0) {
+                // Time's up - process the round
+                console.log(`Ticking and proceedings to round ${gameState.round} in game ID: ${roomId}`);
+                processRoundAndProceed(roomId);
+                // Reset the timer
+                gameState.remainingTime = COUNTDOWN_DURATION;
+            } else {
+                // Emit the current remaining time to all clients in the room
+                io.to(roomId).emit('syncTimer', { 
+                    remainingTime: gameState.remainingTime 
+                });
+            }
         }
     }
-}, 10000)
+}, 1000) // Run every second instead of every 10 seconds
 
 server.listen(5001, () => {
     console.log('listening on *:5001');

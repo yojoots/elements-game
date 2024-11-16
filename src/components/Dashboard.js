@@ -3,6 +3,7 @@ import { useSprings, animated } from '@react-spring/web';
 import { useDrag } from 'react-use-gesture';
 import clamp from 'lodash.clamp';
 import swap from 'lodash-move';
+import AnimatedBattleStats from "./AnimatedBattleStats";
 
 import { Draggable } from "../lib";
 import {
@@ -156,23 +157,22 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
       }, (attackingCircleCount * 220));
     }
-
-    // spawnAndMoveCircles(4, 'red', true); // looting!
-    // spawnAndMoveCircles(4, 'red', false); // outgoing/attacking
   }
 
   function depictAttack(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
     const attackingCircleCount = (colorToElementScore(attackTroopColor));
     spawnAndMoveCircles(attackingCircleCount, attackTroopColor, false); // outgoing/attacking
 
-    console.log("ATTACKINGG:", attackingCircleCount);
-    console.log("LOOTING:", lifeLooted);
+    const circlesToAnimate = calculateVisualCircles(attackingCircleCount);
+
+    console.log("ATTACKINGS:", attackingCircleCount, attackTroopColor);
     if (winnerLeftOrRight == "left") {
+      console.log("LOOTING:", lifeLooted);
       // Attacker wins and loots
       // We are the attacker
       setTimeout(() => {
         animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
-      }, (attackingCircleCount * 0.022) + 2000);
+      }, (circlesToAnimate.count) + 2200);
     }
   }
 
@@ -182,7 +182,9 @@ export const Dashboard = ({ room, socket, currentUser }) => {
 
   function animateCircles(circleCount, circleColor, isLooting) {
     console.log("ANIMATING:", circleCount);
-    for (let i = 0; i < circleCount; i++) {
+    const circlesToAnimate = calculateVisualCircles(circleCount);
+    console.log("circlesToAnimate:", circlesToAnimate);
+    for (let i = 0; i < circlesToAnimate.count; i++) {
       // Stagger the creation of each circle
       setTimeout(() => {
         const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
@@ -190,15 +192,56 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         const circle = document.createElement('div');
         circle.className = isLooting ? 'alootcircle' : 'circle';
         circle.style.backgroundColor = circleColor;
+        circle.style.width = `${circlesToAnimate.radius}px`;
+        circle.style.height = `${circlesToAnimate.radius}px`;
 
         // Positioning circles along the top edge
         circle.style.top = '0px';
-        circle.style.left = `${Math.random() * arenaWidth}px`; // Random position along the width
+        circle.style.left = `${(Math.random() * arenaWidth / 4) + (arenaWidth * 3 / 8)}px`; // Random position along the width in the middle half
 
         arena.appendChild(circle);
         moveCircle(circle);
-      }, i * 100); // Stagger each circle by 100 milliseconds
+      }, (i * 100) + ((Math.random() * 52) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
     }
+  }
+
+  function calculateVisualCircles(totalCount) {
+    // Base case for small numbers
+    if (totalCount <= 2) {
+      return {
+        radius: 20,
+        count: totalCount
+      };
+    }
+  
+    // Using logarithmic scaling for both radius and count
+    // Log base 4 gives us a nice gradual increase
+    const baseRadius = 20;
+    const maxRadius = 40;
+    const minCount = 3;
+    const maxCount = 15;
+  
+    // Calculate radius
+    // As count increases, radius gradually increases up to maxRadius
+    const radiusScale = Math.min(1 + Math.log(totalCount) / 10, 2);
+    const radius = Math.min(baseRadius * radiusScale, maxRadius);
+  
+    // Calculate visual count
+    // Use log base 4 to reduce the number of circles more aggressively
+    const logBase = 4;
+    const suggestedCount = Math.max(
+      minCount,
+      Math.min(
+        Math.round(Math.log(totalCount) / Math.log(logBase) * 2),
+        maxCount
+      )
+    );
+  
+    return {
+      radius: Math.round(radius),
+      count: suggestedCount
+    };
+  }
 
     function moveCircle(circle) {
       const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
@@ -223,51 +266,56 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     }
 
     function explodeCircle(circle) {
-        circle.style.transition = 'transform 0.25s, opacity 0.25s';
+        circle.style.transition = 'transform 0.5s, opacity 0.5s';
         circle.style.transform = 'scale(2)';
         circle.style.opacity = '0';
         setTimeout(() => circle.remove(), 250); // Removes the circle after the effect
     }
-}
+
 function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
   const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
   const smallCircleCount = circleCount / 100;
 
-  for (let i = 0; i < smallCircleCount; i++) {
-      setTimeout(() => {
-          const circle = document.createElement('div');
-          circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
-          circle.style.backgroundColor = circleColor;
-          circle.style.opacity = '0';  // Start fully transparent
-          circle.style.transform = 'scale(0.5)'; // Start smaller
+  let circlesToAnimate = calculateVisualCircles(smallCircleCount);
 
-          const randomizer = Math.random() * 10 - 10; // Random deviation from center, range -50 to +50 pixels
-          const randomizer2 = Math.random() * 15 - 10; // Random deviation from center, range -50 to +50 pixels
+  for (let i = 0; i < circlesToAnimate.count; i++) {
+    setTimeout(() => {
+      const circle = document.createElement('div');
+      circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
+      circle.style.backgroundColor = circleColor;
+      circle.style.opacity = '0';  // Start fully transparent
+      circle.style.transform = 'scale(0.25)'; // Start smaller
 
-          // Positioning circles at the center
-          circle.style.top = `${centerY - 35 + (randomizer)}px`; // Adjusted for the circle's size
-          circle.style.left = `${centerX - 10 + (randomizer2)}px`;
+      circle.style.width = `${circlesToAnimate.radius}px`;
+      circle.style.height = `${circlesToAnimate.radius}px`;
 
-          arena.appendChild(circle);
-          fadeAndMoveCircle(circle);
-      }, i * 100); // Stagger each circle by 100 milliseconds
+      const randomizer = Math.random() * 10 - 10; // Random deviation from center, range -50 to +50 pixels
+      const randomizer2 = Math.random() * 15 - 10; // Random deviation from center, range -50 to +50 pixels
+
+      // Positioning circles at the center
+      circle.style.top = `${centerY - 35 + (randomizer)}px`; // Adjusted for the circle's size
+      circle.style.left = `${centerX - 15 + (randomizer2)}px`;
+
+      arena.appendChild(circle);
+      fadeAndMoveCircle(circle);
+    }, (i * 100) + ((Math.random() * 15) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
   }
 
   function fadeAndMoveCircle(circle) {
-    circle.style.transition = 'top 2s, left 2s, opacity 4s, transform 4s';
+    circle.style.transition = 'top 2s, left 2s, opacity 2s ease-in, transform 2s cubic-bezier(0.34, 1.56, 0.64, 1)';
     circle.style.opacity = '1';  // Fade in
     circle.style.transform = 'scale(1)'; // Grow to full size
 
     setTimeout(() => {
         const deviation = Math.random() * 100 - 50; // Random deviation from center, range -50 to +50 pixels
-        circle.style.top = '-20px'; // Move above the top edge
+        circle.style.top = '-45px'; // Move above the top edge
         circle.style.left = `${centerX - 10 + deviation}px`; // Move to a random position along the x-axis
     }, 500);  // Start moving after fully appearing
 
     setTimeout(() => {
         circle.remove();  // Remove circle from DOM after it moves out
     }, 2500);  // Enough time to finish moving
-}
+  }
 }
 
   function downHandler({key}) {
@@ -277,22 +325,27 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
   }
 
   function upHandler({key}) {
-    // if (key === 'Shift') {
-    //   setShiftHeld(false);
-    // } else if (key === 'e') {
-    //   animateCircles(10, '#ff0000', false);
-    // } else if (key === 'r') {
-    //   spawnAndMoveCircles(4, 'red', true);
-    // } else if (key === 't') {
-    //   spawnAndMoveCircles(4, 'red', false);
-    // } else if (key === 'a') {
-    //   depictAttack("lol", "left", "brown", "blue", 1000, 200);
-    //   //animateCircles(10, 'yellow', true);
+    if (key === 'Shift') {
+      setShiftHeld(false);
+    } else if (key === 'r') {
+      spawnAndMoveCircles(4, 'red', true);
+    } else if (key === 'a') {
+      depictAttack("lol", "left", "gray", "blue", 100, 200);
+      setTimeout(() => {
+        depictAttack("lol", "left", "red", "blue", 22000, 2200);
 
+      }, 1000);
+      setTimeout(() => {
+        depictAttack("lol", "left", "blue", "blue", 1000, 2200);
+
+      }, 1800);
     //   setAlreadyDepictedBattles(prevIds => [...prevIds, "lol"]);
     // } else {
     //   //console.log("pressed:", key);
     // }
+    // } else {
+    //   //console.log("pressed:", key);
+     }
   }
 
   useEffect(() => {
@@ -322,7 +375,6 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
 
       // Check if the event has already been processed
       if (!processedEvents.has(eventId)) {
-        console.log("OBR");
         if (value.room === room && !alreadyDepBat.current.includes(value.id)) {
           setAlreadyDepictedBattles(prevIds => [...prevIds, value.id]);
 
@@ -338,7 +390,6 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
             // We are the defender
             depictBattle(value.id, winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
           } else {
-            console.log("DEPICTING ATTACK");
             depictAttack(value.id, winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
           }
         }
@@ -590,11 +641,24 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
         </div>
         <div className="messages">
           <div id="arena" className="arena">
-            <div className="container">
-              <div className="lifeInCenter btn-4 anyElement">
+          <div className="container">
+            <AnimatedBattleStats
+              lifeScore={lifeScore}
+              airScore={airScore}
+              earthScore={earthScore}
+              fireScore={fireScore}
+              waterScore={waterScore}
+              airPrice={airPrice}
+              earthPrice={earthPrice}
+              firePrice={firePrice}
+              waterPrice={waterPrice}
+              elementOrder={elementOrder}
+              onConvertLifeTo={convertLifeTo}
+            />
+            {/* <div className="lifeInCenter btn-4 anyElement">
                 <span>🌱</span>
                 <div><strong>{Math.round(lifeScore / 100)}</strong></div>
-              </div>
+              </div> */}
               <div className="middleColumn" title={elementOrder}>
                 <Draggable onPosChangeTwo={reorderElements}>
                   <div id="airOrderDiv" data-elch={"a"} className="anyElement"><span>💨</span></div>
@@ -636,7 +700,8 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
                   </div>
                 }
               </div>
-              <div className="fire fireItem anyElement clickableButton" onClick={(e) => convertLifeTo("fire", e)}>
+              {
+              /* <div className="fire fireItem anyElement clickableButton" onClick={(e) => convertLifeTo("fire", e)}>
                 <div>
                   <strong>{Math.round(fireScore / 100)}</strong></div>
                   <span>🔥</span>
@@ -659,7 +724,8 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
                   <strong>{Math.round(airScore / 100)}</strong></div>
                   <span>💨</span>
                   <small>{Math.round(airPrice * 100) / 100}</small>
-              </div>
+              </div> */
+              }
             </div>
             <div className="glowz"></div>
             <canvas id="canvas1"></canvas>
@@ -681,26 +747,32 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
               }
             </div>
           <div id="battle"></div>
-          <div id="trollbox">
-          {messages.map((message) => (
-            <div key={message.id} className="message">
-              <span className="user" style={{color: message.color}}>{message.user}:</span> {message.text}
+          {/* disable trollbox for now */
+            false &&
+            <div id="trollbox">
+              {messages.map((message) => (
+                <div key={message.id} className="message">
+                  <span className="user" style={{color: message.color}}>{message.user}:</span> {message.text}
+                </div>
+              ))}
             </div>
-          ))}
-          </div>
+          }
         </div>
-        <form onSubmit={handleSubmit} className="new-message-form">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(event) => setNewMessage(event.target.value)}
-            className="new-message-input"
-            placeholder="Enter chat here..."
-          />
-          <button type="submit" className="send-button">
-            Send
-          </button>
-        </form>
+        {/* disable trollbox for now */
+          false && 
+          <form onSubmit={handleSubmit} className="new-message-form">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(event) => setNewMessage(event.target.value)}
+              className="new-message-input"
+              placeholder="Enter chat here..."
+            />
+            <button type="submit" className="send-button">
+              Send
+            </button>
+          </form>
+        }
       </div>
     </>
   );

@@ -474,6 +474,7 @@
   .anyElement small{
     font-size: 10px;
     pointer-events: none;
+    margin-bottom: 1px;
   }
 
   .anyElement strong{
@@ -497,6 +498,10 @@
     height: 100px;
     z-index: 3;
     background-color: rgb(46, 54, 49);
+}
+
+.lifeInCenter strong {
+  font-size: 15px;
 }
 .seed {
     position: absolute;
@@ -537,7 +542,7 @@
     border-radius: 50%;
     width: 100px;
     height: 100px;
-    background-color: #edf6ff8a;
+    background-color: #f3f8ff73;
 }
 .fire {
     position: absolute;
@@ -546,7 +551,7 @@
     border-radius: 50%;
     width: 100px;
     height: 100px;
-    background-color: #f31302f5;
+    background-color: #ba2807f5;
 }
 .earth {
     position: absolute;
@@ -555,7 +560,7 @@
     border-radius: 50%;
     width: 100px;
     height: 100px;
-    background-color: #795548;
+    background-color: #332019;
 }
 .water {
     position: absolute;
@@ -564,7 +569,7 @@
     border-radius: 50%;
     width: 100px;
     height: 100px;
-    background-color: #0086c3eb;
+    background-color: #033c55eb;
 }
 
 
@@ -583,6 +588,11 @@ box-shadow: 0px 1px -1px #F00;
 -webkit-box-shadow: 0px 1px 25px #F00;
 box-shadow: 0px 1px 25px #F00;
 }
+75% {
+  -moz-box-shadow: 0px 1px 10px #F00;
+  -webkit-box-shadow: 0px 1px 6px #F00;
+  box-shadow: 0px 1px 12px #F00;
+  }
 }
 @-moz-keyframes breathing {
 0% {
@@ -624,26 +634,26 @@ box-shadow: 0px 1px 25px #1955f5;
 }
 @-moz-keyframes breathingBlue {
 0% {
--moz-box-shadow: 0px 1px 1px #1955f5;
--webkit-box-shadow: 0px 1px 1px #1955f5;
-box-shadow: 0px 1px 1px #1955f5;
+-moz-box-shadow: 0px 1px 1px #123082;
+-webkit-box-shadow: 0px 1px 1px #143592;
+box-shadow: 0px 1px 1px #0d2f8d;
 }
 50% {
--moz-box-shadow: 0px 1px 25px #1955f5;
--webkit-box-shadow: 0px 1px 25px #1955f5;
-box-shadow: 0px 1px 25px #1955f5;
+-moz-box-shadow: 0px 1px 25px #132f7d;
+-webkit-box-shadow: 0px 1px 25px #133389;
+box-shadow: 0px 1px 25px #0c2f8f;
 }
 }
 @keyframes breathingBlue {
 0% {
--moz-box-shadow: 0px 1px 1px #1955f5;
--webkit-box-shadow: 0px 1px 1px #1955f5;
-box-shadow: 0px 1px 1px #1955f5;
+-moz-box-shadow: 0px 1px 1px #1a3d9f;
+-webkit-box-shadow: 0px 1px 1px #0f3291;
+box-shadow: 0px 1px 1px #0c2f8e;
 }
 50% {
--moz-box-shadow: 0px 1px 25px #1955f5;
--webkit-box-shadow: 0px 1px 25px #1955f5;
-box-shadow: 0px 1px 25px #1955f5;
+-moz-box-shadow: 0px 1px 25px #0f318c;
+-webkit-box-shadow: 0px 1px 25px #143ba6;
+box-shadow: 0px 1px 25px #0b287b;
 }
 }
 
@@ -651,8 +661,8 @@ box-shadow: 0px 1px 25px #1955f5;
 
 @-webkit-keyframes breathingGray {
 0% {
--moz-box-shadow: 0px 1px -1px #e5f7fc;
--webkit-box-shadow: 0px 1px -1px #e5f7fc;
+-moz-box-shadow: 0px 1px -1px #9ba6a9;
+-webkit-box-shadow: 0px 1px -1px #9fadb0;
 box-shadow: 0px 1px -1px #e5f7fc;
 }
 50% {
@@ -668,21 +678,21 @@ box-shadow: 0px 1px 25px #e5f7fc;
 box-shadow: 0px 1px 1px #e5f7fc;
 }
 50% {
--moz-box-shadow: 0px 1px 25px #e5f7fc;
--webkit-box-shadow: 0px 1px 25px #e5f7fc;
-box-shadow: 0px 1px 25px #e5f7fc;
+-moz-box-shadow: 0px 1px 25px #92a0a4;
+-webkit-box-shadow: 0px 1px 25px #768184;
+box-shadow: 0px 1px 25px #98a3a6;
 }
 }
 @keyframes breathingGray {
 0% {
--moz-box-shadow: 0px 1px 1px #e5f7fc;
--webkit-box-shadow: 0px 1px 1px #e5f7fc;
-box-shadow: 0px 1px 1px #e5f7fc;
+-moz-box-shadow: 0px 1px 1px #8fa5ab;
+-webkit-box-shadow: 0px 1px 1px #707a7d;
+box-shadow: 0px 1px 1px #a3b0b4;
 }
 50% {
--moz-box-shadow: 0px 1px 25px #e5f7fc;
--webkit-box-shadow: 0px 1px 25px #e5f7fc;
-box-shadow: 0px 1px 25px #e5f7fc;
+-moz-box-shadow: 0px 1px 25px #929ea1;
+-webkit-box-shadow: 0px 1px 25px #889497;
+box-shadow: 0px 1px 25px #6f787a;
 }
 }
 
@@ -746,7 +756,7 @@ text-align: center;
 .waterItem {
 float: left;
 margin-left: 20px;
--moz-box-shadow: 0px 1px 1px #1955f5;
+-moz-box-shadow: 0px 1px 1px #102f85;
 -webkit-box-shadow: 0px 1px 1px #1955f5;
 box-shadow: 0px 1px 1px #1955f5;
 animation: breathingBlue 3s linear infinite;

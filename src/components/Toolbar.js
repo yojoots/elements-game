@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import { auth } from "../firebase-config";
 import {serverTimestamp} from "firebase/firestore";
-import { CountdownCircleTimer } from 'react-countdown-circle-timer'
+import { SyncCountdownTimer } from "./SyncCountdownTimer";
 
 const customStyles = {
     content: {
@@ -14,14 +14,26 @@ const customStyles = {
       transform: 'translate(-50%, -50%)',
     },
   };
-export const Toolbar = ({ room, socket }) => {
+export const Toolbar = ({ id, room, socket }) => {
   let subtitle;
   const [modalIsOpen, setIsOpen] = useState(false);
   const [isAutoProceed, setIsAutoProceed] = useState(false);
+  const [serverTime, setServerTime] = useState(null);
 
   // function openModal() {
   //   setIsOpen(true);
   // }
+  useEffect(() => {
+    // Setup socket connection
+    socket.on('syncTimer', (data) => {
+      setServerTime(data.remainingTime);
+    });
+
+    // Cleanup
+    return () => {
+      socket.off('syncTimer');
+    };
+  }, []);
 
   function afterOpenModal() {
     // references are now sync'd and can be accessed.
@@ -82,18 +94,16 @@ export const Toolbar = ({ room, socket }) => {
         (<div>
           <div className="centered"><button onClick={stopAutoProceeding}>Stop</button></div> 
           <div className="centered">
-            <CountdownCircleTimer
-              isPlaying
+            <SyncCountdownTimer
               duration={10}
-              colors={['#004777', '#F7B801', '#A30000', '#A30000']}
-              colorsTime={[7, 5, 2, 0]}
+              colors={['green', '#F7B801', '#ed6403', '#c50202']}
+              colorsTime={[6, 4, 2, 1]}
+              serverTimeRemaining={serverTime}
               onComplete={() => {
                 // do your stuff here
-                return { shouldRepeat: true, delay: 0 } // repeat animation in 1.5 seconds
+                return { shouldRepeat: true, delay: 0 }
               }}
-            >
-              {({ remainingTime }) => remainingTime}
-            </CountdownCircleTimer>
+            />
           </div>
         </div>) :
         (<div className="centered"><button onClick={beginAutoProceeding}>Start</button></div> ) }
