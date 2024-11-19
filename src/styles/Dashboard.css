@@ -172,30 +172,36 @@
     margin-top: 10px;
     margin-right: 20px;
     vertical-align: middle;
+    font-size: 23px;
+    margin-left: 12px;
   }
 
-  .neighborhood-buttons > .attackable {
+  .attackable {
     cursor: pointer;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 25px;
     color: white;
-    padding: 10px;
+    padding: 15px;
     text-shadow: 2px 2px black;
     font-size: 20px;
     margin-right: 10px;
     margin-top: 8px;
   }
 
-  .neighborhood-buttons > .queued {
+  .queued {
     cursor: default;
     opacity: 0.5;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 25px;
     color: white;
-    padding: 10px;
+    padding: 15px;
     text-shadow: 2px 2px black;
     font-size: 20px;
     margin-right: 10px;
+  }
+
+  .player-buttons {
+    display: flex;
   }
 
   .arena {
@@ -365,6 +371,10 @@
 
   .mb-15 {
     margin-bottom: 10px;
+  }
+
+  .mb-100  {
+    margin-bottom: 100px;
   }
 
   .bold {

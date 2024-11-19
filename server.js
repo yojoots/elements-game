@@ -6,6 +6,7 @@ const { Server } = require("socket.io");
 const util = require('util')
 const fs = require('node:fs');
 const crypto = require('crypto');
+const helpers = require('./src/helpers');
 
 const LIFE_SCORE_MULTIPLIER = 1.5;
 
@@ -44,7 +45,7 @@ const initPlayer = (userId, playerIndex) => {
         id: userId,
         playerIndex: playerIndex,
         nickname: nameList[Math.floor( Math.random() * nameList.length )],
-        color: stringToColour(userId),
+        color: helpers.colorifyString(userId),
         neighborhood: [],
         lastSpellCastInRound: -1,
         isScrying: false,
@@ -108,22 +109,7 @@ const initGame = (roomId) => {
 
 let knownGameStates = {}
 
-const stringToColour = (str) => {
-    let hash = 0;
-    str.split('').forEach(char => {
-      hash = char.charCodeAt(0) + ((hash << 5) - hash)
-    })
-    let colour = '#'
-    for (let i = 0; i < 3; i++) {
-      const value = (hash >> (i * 8)) & 0xff
-      colour += value.toString(16).padStart(2, '0')
-    }
-    return colour
-}
-
 function addPlayerToGame(userId, gameState) {
-    console.log("TRYING TO ADD PLAY:", userId);
-    console.log("ADDING TO:", gameState);
     if (gameState.round > 0) {
         console.log(`User ${userId} cannot join game ${gameState.roomId} already in-progress (round ${gameState.round})`);
         return;
@@ -133,6 +119,7 @@ function addPlayerToGame(userId, gameState) {
 
     if (player !== undefined) {
         // Don't try to double-add
+        console.log(`User ${userId} already in game ${gameState.roomId}`);
         return;
     }
 
@@ -183,44 +170,6 @@ function saveGameState(gameState) {
           console.log("WROTE GAMESTATE:", gameState.roomId)
         }
     });
-}
-
-function letterToElement(letter) {
-    if (letter === "a") {
-        return "air"
-    } else if (letter === "e") {
-        return "earth"
-    } else if (letter === "f") {
-        return "fire"
-    } else if (letter === "w") {
-        return "water"
-    } else {
-        return "neutral"
-    }
-}
-
-function colorFromElement(element) {
-    if (element === "air") {
-        return "gray"
-    } else if (element === "earth") {
-        return "brown"
-    } else if (element === "fire") {
-        return "red"
-    } else if (element === "water") {
-        return "blue"
-    } else {
-        return "black"
-    }
-}
-
-function hashCode(string){
-    var hash = 0;
-    for (var i = 0; i < string.length; i++) {
-        var code = string.charCodeAt(i);
-        hash = ((hash<<5)-hash)+code;
-        hash = hash & hash; // Convert to 32bit integer
-    }
-    return hash;
 }
 
 function getRandomString(strLen = 7) {
@@ -309,7 +258,7 @@ io.on('connection', (socket) => {
         }
 
         let timeString = new Date().getTime().toString();
-        let argsHash = hashCode(JSON.stringify(args) + timeString);
+        let argsHash = helpers.hashCode(JSON.stringify(args) + timeString);
         io.to(roomId).emit('newMessage', {room: roomId, text: args.text, user: player.nickname, color: player.color, id: argsHash, key: argsHash})
     });
 
@@ -545,7 +494,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on("startRoundTimer", (args) => {
-        console.log("START RT", args.room);
+        console.log("START RT", args);
         let gameState = knownGameStates[args.room];
         if (gameState === undefined) {
             return
@@ -639,8 +588,8 @@ function combat(attackingArmy, defendingArmy, weather, defenderLife) {
         // Attacker wins
         return {
             "id": uniqueId,
-            "attackTroopColor": colorFromElement(attackingArmy.element),
-            "defendTroopColor": colorFromElement(defendingArmy.element),
+            "attackTroopColor": helpers.colorFromElement(attackingArmy.element),
+            "defendTroopColor": helpers.colorFromElement(defendingArmy.element),
             "attackRemaining": totalAttackScore - totalDefendScore,
             "defendRemaining": 0,
             "lifeLooted": Math.min(defenderLife, totalAttackScore - totalDefendScore)
@@ -649,8 +598,8 @@ function combat(attackingArmy, defendingArmy, weather, defenderLife) {
         // Defender wins
         return {
             "id": uniqueId,
-            "attackTroopColor": colorFromElement(attackingArmy.element),
-            "defendTroopColor": colorFromElement(defendingArmy.element),
+            "attackTroopColor": helpers.colorFromElement(attackingArmy.element),
+            "defendTroopColor": helpers.colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
             "defendRemaining": totalDefendScore - totalAttackScore,
             "lifeLooted": 0
@@ -658,8 +607,8 @@ function combat(attackingArmy, defendingArmy, weather, defenderLife) {
     } else {
         return {
             "id": uniqueId,
-            "attackTroopColor": colorFromElement(attackingArmy.element),
-            "defendTroopColor": colorFromElement(defendingArmy.element),
+            "attackTroopColor": helpers.colorFromElement(attackingArmy.element),
+            "defendTroopColor": helpers.colorFromElement(defendingArmy.element),
             "attackRemaining": 0,
             "defendRemaining": 0,
             "lifeLooted": 0
@@ -781,7 +730,7 @@ function topTroops(player, attackingOrDefending) {
 
     // Return first nonzero element from player's troop ordering
     for (let c = 0; c < player.order.length; c++) {
-        let troopType = letterToElement(player.order.charAt(c));
+        let troopType = helpers.letterToElement(player.order.charAt(c));
         if (player[troopType] > 0) {
             return {troopType: troopType, amount: player[troopType]}
         }
@@ -837,7 +786,7 @@ function processRoundAndProceed(roomId) {
                 defendingPlayer[defendingStrengthAndType.troopType] = battleResults.defendRemaining;
 
                 let timeString = new Date().getTime().toString();
-                let battleResultsHash = hashCode(JSON.stringify(battleResults) + timeString);
+                let battleResultsHash = helpers.hashCode(JSON.stringify(battleResults) + timeString);
                 //io.to(roomId).emit('newMessage', {room: roomId, text: JSON.stringify(battleResults), user: "SYSTEM", color: "BLACK", id: battleResultsHash, key: battleResultsHash});
                 console.log('Emitting battleResults:', battleResultsHash);
 

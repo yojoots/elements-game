@@ -19,7 +19,7 @@ export const AppWrapper = ({ children, isAuth, setIsAuth, setIsInChat }) => {
         <h1> Elements </h1>
       </div> */}
 
-      <div className="app-container">{children}</div>
+      <div className="w-full">{children}</div>
       {isAuth && (
         <div className="sign-out">
           <button onClick={signUserOut}> Sign Out</button>

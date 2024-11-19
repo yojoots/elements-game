@@ -42,4 +42,6 @@ The build is minified and the filenames include the hashes.
 - [ ] Admin (or automatic) game cleanup
 - [ ] Better animations
 - [ ] Log reader
+- [ ] First to a game is rulesetter (form)
+    - [] Show settings to other joining players
 - [ ] Deploy to website

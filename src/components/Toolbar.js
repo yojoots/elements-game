@@ -1,8 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Modal from 'react-modal';
-import { auth } from "../firebase-config";
-import {serverTimestamp} from "firebase/firestore";
-import { SyncCountdownTimer } from "./SyncCountdownTimer";
 
 const customStyles = {
     content: {
@@ -17,23 +14,10 @@ const customStyles = {
 export const Toolbar = ({ id, room, socket }) => {
   let subtitle;
   const [modalIsOpen, setIsOpen] = useState(false);
-  const [isAutoProceed, setIsAutoProceed] = useState(false);
-  const [serverTime, setServerTime] = useState(null);
 
-  // function openModal() {
-  //   setIsOpen(true);
-  // }
-  useEffect(() => {
-    // Setup socket connection
-    socket.on('syncTimer', (data) => {
-      setServerTime(data.remainingTime);
-    });
-
-    // Cleanup
-    return () => {
-      socket.off('syncTimer');
-    };
-  }, []);
+  function openModal() {
+    setIsOpen(true);
+  }
 
   function afterOpenModal() {
     // references are now sync'd and can be accessed.
@@ -44,70 +28,10 @@ export const Toolbar = ({ id, room, socket }) => {
     setIsOpen(false);
   }
 
-  const handleRoundIncrement = async (event) => {
-    event.preventDefault();
-
-    //setIsAutoProceed(true);
-    console.log("TRYING TO INCREMENT");
-
-    socket.emit("nextRound", {
-        createdAt: serverTimestamp(),
-        userUid: auth.currentUser.uid,
-        roomId: room,
-        room
-      })
-  };
-
-  const beginAutoProceeding = async (event) => {
-    event.preventDefault();
-    setIsAutoProceed(true);
-
-    // socket.emit("startRoundTimer", {
-    //     createdAt: serverTimestamp(),
-    //     userUid: auth.currentUser.uid,
-    //     roomId: room,
-    //     room
-    //   });
-
-    socket.emit("startRoundTimer", {room: room})
-  };
-
-
-  const stopAutoProceeding = async (event) => {
-    event.preventDefault();
-    setIsAutoProceed(false);
-
-    // socket.emit("stopRoundTimer", {
-    //     createdAt: serverTimestamp(),
-    //     userUid: auth.currentUser.uid,
-    //     roomId: room,
-    //     room
-    //   });
-
-    socket.emit("stopRoundTimer", {room: room})
-  };
-
   return (
     <>
-      {/* <div className="centered"><button onClick={openModal}>Convert</button></div> */}
-      { isAutoProceed ?
-        (<div>
-          <div className="centered"><button onClick={stopAutoProceeding}>Stop</button></div> 
-          <div className="centered">
-            <SyncCountdownTimer
-              duration={10}
-              colors={['green', '#F7B801', '#ed6403', '#c50202']}
-              colorsTime={[6, 4, 2, 1]}
-              serverTimeRemaining={serverTime}
-              onComplete={() => {
-                // do your stuff here
-                return { shouldRepeat: true, delay: 0 }
-              }}
-            />
-          </div>
-        </div>) :
-        (<div className="centered"><button onClick={beginAutoProceeding}>Start</button></div> ) }
-      {<div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
+      { // Disabled for now
+      false && <div className="centered"><button onClick={openModal}>Convert</button></div>}
       <Modal
         isOpen={modalIsOpen}
         onAfterOpen={afterOpenModal}

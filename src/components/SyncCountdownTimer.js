@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 export const SyncCountdownTimer = ({ 
   duration = 10, 
-  size = 180, 
+  size = 130,
   strokeWidth = 12,
   colors = ['#004777', '#F7B801', '#ed6403', '#A30000'],
   colorsTime = [7, 5, 2, 0],
@@ -51,11 +51,11 @@ export const SyncCountdownTimer = ({
   const strokeDashoffset = circumference - (remainingTime / duration) * circumference;
 
   return (
-    <div className={`inline-flex items-center justify-center relative ${className}`}>
+    <div className={`centered inline-flex items-center justify-center relative ${className}`}>
         <div style={{ 
             position: 'relative',
             fontSize: '40px',
-            top: '110px', 
+            top: '87px',
             // left: '75px',
             textAlign: 'center',
             left: '-1px',

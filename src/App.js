@@ -9,9 +9,9 @@ import io from 'socket.io-client';
 import { auth } from "./firebase-config";
 
 const cookies = new Cookies();
-const socket = io.connect('http://localhost:5001');
+const socket = io.connect(process.env.REACT_APP_SOCKET_SERVER);
 
-function ChatApp() {
+function ElementsApp() {
   const [isAuth, setIsAuth] = useState(cookies.get("auth-token"));
   const queryParameters = new URLSearchParams(window.location.search);
   const queryParamRoom = queryParameters.get("room");
@@ -64,4 +64,4 @@ function ChatApp() {
   );
 }
 
-export default ChatApp;
+export default ElementsApp;

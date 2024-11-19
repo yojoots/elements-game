@@ -4,11 +4,10 @@ import { useDrag } from 'react-use-gesture';
 import clamp from 'lodash.clamp';
 import swap from 'lodash-move';
 import AnimatedBattleStats from "./AnimatedBattleStats";
-
+import helpers from "../helpers";
 import { Draggable } from "../lib";
-import {
-  serverTimestamp,
-} from "firebase/firestore";
+import { serverTimestamp } from "firebase/firestore";
+import { SyncCountdownTimer } from "./SyncCountdownTimer";
 
 import "../styles/Dashboard.css";
 
@@ -46,10 +45,26 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const waterScoreRef = useRef(waterScore);
   const alreadyDepBat = useRef(alreadyDepictedBattles);
   const [processedEvents, setProcessedEvents] = useState(new Set());
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const [isAutoProceed, setIsAutoProceed] = useState(false);
+  const [serverTime, setServerTime] = useState(null);
+  const [showCopyTooltip, setShowCopyTooltip] = useState(true);
 
   useEffect(() => {
     alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes
-}, [alreadyDepictedBattles]);
+  }, [alreadyDepictedBattles]);
+
+  useEffect(() => {
+    // Setup socket connection
+    socket.on('syncTimer', (data) => {
+      setServerTime(data.remainingTime);
+    });
+
+    // Cleanup
+    return () => {
+      socket.off('syncTimer');
+    };
+  }, [socket]);
 
   useEffect(() => {
     airScoreRef.current = airScore; // Update ref when state changes
@@ -71,6 +86,43 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     })
     setIsJoined(true);
   }
+
+  const handleRoundIncrement = async (event) => {
+    event.preventDefault();
+
+    socket.emit("nextRound", {
+        createdAt: serverTimestamp(),
+        userUid: currentUser.uid,
+        roomId: room,
+        room
+      })
+  };
+
+  const beginAutoProceeding = async (event) => {
+    event.preventDefault();
+    setIsAutoProceed(true);
+
+    socket.emit("startRoundTimer", {room: room})
+  };
+
+  const stopAutoProceeding = async (event) => {
+    event.preventDefault();
+    setIsAutoProceed(false);
+
+    socket.emit("stopRoundTimer", {room: room})
+  };
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setShowCopyTooltip(true);
+      setTimeout(() => {
+        setShowCopyTooltip(false);
+      }, 2000); // Hide after 2 seconds
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -104,9 +156,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         //fullUser: auth.currentUser,
         room,
       })
-
   };
-
 
   const queueAttack = async (event, targetPlayerIndex) => {
     if (targetPlayerIndex < 0) return;
@@ -123,20 +173,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     setAttacking(targetPlayerIndex);
   };
 
-  function colorToElementScore(color) {
-    if (color === "gray") {
-      return airScoreRef.current;
-    } else if (color === "brown") {
-      return earthScoreRef.current;
-    } else if (color === "red") {
-      return fireScoreRef.current;
-    } else if (color === "blue") {
-      return waterScoreRef.current;
-    } else {
-      return 0
-    }
-}
-
   function depictBattle(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
 
     const attackingCircleCount = ((whatsLeft + colorToElementScore(defendTroopColor)) / 100);
@@ -146,7 +182,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     if (winnerLeftOrRight == "left") {
       // Attacker wins and loots
       // We are the defender
-      //depictBattle(winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
       animateCircles(attackingCircleCount, attackTroopColor, false); // incoming!
       setTimeout(() => {
         spawnAndMoveCircles((lifeLooted / 100), attackTroopColor, true); // looting!
@@ -163,7 +198,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     const attackingCircleCount = (colorToElementScore(attackTroopColor));
     spawnAndMoveCircles(attackingCircleCount, attackTroopColor, false); // outgoing/attacking
 
-    const circlesToAnimate = calculateVisualCircles(attackingCircleCount);
+    const circlesToAnimate = helpers.calculateVisualCircles(attackingCircleCount);
 
     console.log("ATTACKINGS:", attackingCircleCount, attackTroopColor);
     if (winnerLeftOrRight == "left") {
@@ -176,14 +211,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     }
   }
 
-
-  const [shiftHeld, setShiftHeld] = useState(false);
-
-
   function animateCircles(circleCount, circleColor, isLooting) {
-    console.log("ANIMATING:", circleCount);
-    const circlesToAnimate = calculateVisualCircles(circleCount);
-    console.log("circlesToAnimate:", circlesToAnimate);
+    const circlesToAnimate = helpers.calculateVisualCircles(circleCount);
     for (let i = 0; i < circlesToAnimate.count; i++) {
       // Stagger the creation of each circle
       setTimeout(() => {
@@ -203,44 +232,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         moveCircle(circle);
       }, (i * 100) + ((Math.random() * 52) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
     }
-  }
-
-  function calculateVisualCircles(totalCount) {
-    // Base case for small numbers
-    if (totalCount <= 2) {
-      return {
-        radius: 20,
-        count: totalCount
-      };
-    }
-  
-    // Using logarithmic scaling for both radius and count
-    // Log base 4 gives us a nice gradual increase
-    const baseRadius = 20;
-    const maxRadius = 40;
-    const minCount = 3;
-    const maxCount = 15;
-  
-    // Calculate radius
-    // As count increases, radius gradually increases up to maxRadius
-    const radiusScale = Math.min(1 + Math.log(totalCount) / 10, 2);
-    const radius = Math.min(baseRadius * radiusScale, maxRadius);
-  
-    // Calculate visual count
-    // Use log base 4 to reduce the number of circles more aggressively
-    const logBase = 4;
-    const suggestedCount = Math.max(
-      minCount,
-      Math.min(
-        Math.round(Math.log(totalCount) / Math.log(logBase) * 2),
-        maxCount
-      )
-    );
-  
-    return {
-      radius: Math.round(radius),
-      count: suggestedCount
-    };
   }
 
     function moveCircle(circle) {
@@ -276,7 +267,7 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
   const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
   const smallCircleCount = circleCount / 100;
 
-  let circlesToAnimate = calculateVisualCircles(smallCircleCount);
+  let circlesToAnimate = helpers.calculateVisualCircles(smallCircleCount);
 
   for (let i = 0; i < circlesToAnimate.count; i++) {
     setTimeout(() => {
@@ -545,6 +536,20 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
       }
   }
 
+  function colorToElementScore(color) {
+    if (color === "gray") {
+      return airScoreRef.current;
+    } else if (color === "brown") {
+      return earthScoreRef.current;
+    } else if (color === "red") {
+      return fireScoreRef.current;
+    } else if (color === "blue") {
+      return waterScoreRef.current;
+    } else {
+      return 0
+    }
+  }
+
   function PrettyDraggableList({ items }) {
     const order = useRef(items.map((_, index) => index)) // Store indicies as a local ref, this represents the item order
     const [springs, api] = useSprings(items.length, fn(order.current)) // Create springs, each corresponds to an item, controlling its transform, scale, etc.
@@ -576,8 +581,14 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
 
   if (gameIsOver) {
     return (
-      <div className="dashboard-app">
-        <div className="header">
+      <div className="dashboard-app"> 
+        <div
+            className="header cursor-copy"
+            title={room}
+            onClick={() =>
+              copyToClipboard(room)
+            }
+          >
           <h2 className="mb-1">Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber} (COMPLETE)</h3>
         </div>
@@ -633,8 +644,15 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
               <div>{Math.round(fortifyScore / 100)} 🛡️</div>
             </div>
           </div>
-          <div className="weather">
-            <p><b>Room:</b> {room}</p>
+          <div
+            className="weather">
+            <p className="cursor-copy"
+            title={room}
+            onClick={() =>
+              copyToClipboard(room)
+            }
+          ><b>Room:</b> {room}</p>
+            {(showCopyTooltip && <div className="tooltip">Copied!</div>)}
             <p><b>Round:</b> {roundNumber}</p>
             <p><b>Weather:</b> {roundWeather}</p>
           </div>
@@ -730,11 +748,12 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
             <div className="glowz"></div>
             <canvas id="canvas1"></canvas>
           </div>
-          <div className="neighborhood-buttons">
+          <div className="neighborhood-buttons centered w-full">
               { neighborhood.length > 0 &&
               (
                 <span>Attack:</span>
               )}
+              <div className="player-buttons">
               { neighborhood.length > 0 &&
                 (neighborhood.map((neighbor) => {
                   return (
@@ -745,8 +764,33 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
                   );
                 }))
               }
+              </div>
             </div>
-          <div id="battle"></div>
+
+            { isAutoProceed ?
+              (<div className="w-full mb-100">
+                <div className="centered"><button className="circleButton bigText stoppem" onClick={stopAutoProceeding}>⏱️</button></div> 
+                <div className="centered">
+                  <SyncCountdownTimer
+                    duration={10}
+                    colors={['green', '#F7B801', '#ed6403', '#c50202']}
+                    colorsTime={[6, 4, 2, 1]}
+                    serverTimeRemaining={serverTime}
+                    onComplete={() => {
+                      return { shouldRepeat: true, delay: 0 }
+                    }}
+                  />
+                </div>
+              </div>) :
+              (
+                <div className="w-full">
+                  <div className="centered"><button className="circleButton bigText" onClick={beginAutoProceeding}>⏱️</button></div>
+                  <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div>
+                </div> 
+              )
+            }
+
+        <div id="battle"></div>
           {/* disable trollbox for now */
             false &&
             <div id="trollbox">
