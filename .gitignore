@@ -1,3 +1,4 @@
 node_modules
 
-src/firebase-config.js
+# Local Netlify folder
+.netlify
