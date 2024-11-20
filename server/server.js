@@ -911,6 +911,9 @@ setInterval(() => {
     }
 }, 1000) // Run every second instead of every 10 seconds
 
-server.listen(5001, () => {
-    console.log('listening on *:5001');
-});
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
+  }).on('error', (err) => {
+    console.error('Server failed to start:', err);
+    process.exit(1); // Exit on error so Heroku can restart
+  });
