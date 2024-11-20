@@ -884,7 +884,7 @@ function processRoundAndProceed(roomId) {
         waterPrice: gameState.waterPrice,
     });
 }
-const COUNTDOWN_DURATION = 10; // seconds
+const COUNTDOWN_DURATION = 20; // seconds
 
 setInterval(() => {
     for (const [roomId, gameState] of Object.entries(knownGameStates)) {
