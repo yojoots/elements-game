@@ -48,7 +48,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const [shiftHeld, setShiftHeld] = useState(false);
   const [isAutoProceed, setIsAutoProceed] = useState(false);
   const [serverTime, setServerTime] = useState(null);
-  const [showCopyTooltip, setShowCopyTooltip] = useState(true);
+  const [showCopyTooltip, setShowCopyTooltip] = useState(false);
 
   useEffect(() => {
     alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes

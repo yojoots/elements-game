@@ -3,18 +3,35 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
+const cors = require('cors');
 const util = require('util')
 const fs = require('node:fs');
 const crypto = require('crypto');
-const helpers = require('./src/helpers');
+const helpers = require('./helpers');
 
-const LIFE_SCORE_MULTIPLIER = 1.5;
+// Environment variables
+require('dotenv').config();
+const PORT = process.env.PORT || 5001;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://elements.game';
 
+console.log("::::::::::::::::XXXXXXXXXXXX::::::::::::::::FRONTEND_URL", FRONTEND_URL);
+
+// Middleware
+app.use(cors({
+    origin: FRONTEND_URL,
+    credentials: true
+}));
+
+// Socket.IO setup
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000"
+        origin: FRONTEND_URL,
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
+
+const LIFE_SCORE_MULTIPLIER = 1.5;
 
 const nameList = [
     'Time','Past','Future','Dev',
@@ -523,6 +540,17 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log("Disconnected from socket");
     });
+});
+
+
+// Basic route for checking if server is running
+app.get('/', (req, res) => {
+    res.send('Server is running');
+});
+
+// Basic health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy' });
 });
 
 function combat(attackingArmy, defendingArmy, weather, defenderLife) {
