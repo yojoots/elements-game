@@ -9,7 +9,16 @@ import io from 'socket.io-client';
 import { auth } from "./firebase-config";
 
 const cookies = new Cookies();
-const socket = io.connect(process.env.REACT_APP_SOCKET_SERVER);
+const socket = io.connect(process.env.REACT_APP_SOCKET_SERVER, {
+  withCredentials: true,
+  transportOptions: {
+    polling: {
+      extraHeaders: {
+        "my-custom-header": "abcd"
+      }
+    }
+  }
+});
 
 function ElementsApp() {
   const [isAuth, setIsAuth] = useState(cookies.get("auth-token"));

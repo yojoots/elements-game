@@ -14,21 +14,37 @@ require('dotenv').config();
 const PORT = process.env.PORT || 5001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://elements.game';
 
-console.log("::::::::::::::::XXXXXXXXXXXX::::::::::::::::FRONTEND_URL", FRONTEND_URL);
+// Define allowed origins
+const allowedOrigins = [
+    'http://localhost:3000',     // Local development
+    'https://elements.game',     // Production site
+    'https://www.elements.game'  // Production site with www
+  ];
 
 // Middleware
 app.use(cors({
-    origin: FRONTEND_URL,
+    origin: function(origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true
 }));
 
 // Socket.IO setup
 const io = new Server(server, {
     cors: {
-        origin: FRONTEND_URL,
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
-        credentials: true
-    }
+        credentials: true,
+        allowedHeaders: ["my-custom-header"],
+    },
+    allowEIO3: true // Allow Engine.IO version 3 clients if needed
 });
 
 const LIFE_SCORE_MULTIPLIER = 1.5;
