@@ -128,3 +128,7 @@ h2 {
 .cursor-copy {
   cursor: copy;
 }
+
+.fantasy {
+  font-family: fantasy;
+}

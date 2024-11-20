@@ -6,11 +6,10 @@ The front-end (client) is a React app. The back-end (server) is a minimal expres
 
 ## Running
 
-First, set things up by copying the `.env.example` file to `.env` and making sure real Firebase credentials/settings are included in it. After this has been done, you can run the front-end client:
+First, set things up by copying the `.env.example` file in the client folder to `.env` and making sure real Firebase credentials/settings are included in it. After this has been done, you can run the front-end client:
 
 ```bash
-cd client
-npm start
+npm run client
 ```
 
 This will run the client in development mode.
@@ -24,8 +23,7 @@ You may also see any lint errors in the console.
 To run the server after its `.env` file has been readied:
 
 ```bash
-cd server
-npm start
+npm run start
 ```
 
 This runs the server (on port 5001 by default).
@@ -37,6 +35,21 @@ It must be running for the client(s) to work, as it manages game states and the 
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
 The build is minified and the filenames include the hashes.
+
+## Deploying
+
+To deploy the front-end via Netlify:
+
+```bash
+netlify deploy --prod
+```
+
+To deploy the back-end via Heroku:
+
+```bash
+git push heroku master
+```
+
 
 ## TODO
 
