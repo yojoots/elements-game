@@ -489,13 +489,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   if (gameIsOver) {
     return (
       <div className="dashboard-app"> 
-        <div
-            className="header cursor-copy"
-            title={room}
-            onClick={() =>
-              copyToClipboard(room)
-            }
-          >
+        <div className="header">
           <h2 className="mb-1">Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber} (COMPLETE)</h3>
         </div>
