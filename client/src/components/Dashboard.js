@@ -1,8 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useSprings, animated } from '@react-spring/web';
-import { useDrag } from 'react-use-gesture';
-import clamp from 'lodash.clamp';
-import swap from 'lodash-move';
 import AnimatedBattleStats from "./AnimatedBattleStats";
 import helpers from "../helpers";
 import { Draggable } from "../lib";
@@ -45,7 +41,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   const waterScoreRef = useRef(waterScore);
   const alreadyDepBat = useRef(alreadyDepictedBattles);
   const [processedEvents, setProcessedEvents] = useState(new Set());
-  const [shiftHeld, setShiftHeld] = useState(false);
   const [isAutoProceed, setIsAutoProceed] = useState(false);
   const [serverTime, setServerTime] = useState(null);
   const [showCopyTooltip, setShowCopyTooltip] = useState(false);
@@ -173,13 +168,26 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     setAttacking(targetPlayerIndex);
   };
 
+  useEffect(() => {
+    socket.on("connection", (room) => {
+      console.log("JOINING ROOM:", room);
+      socket.join(room);
+    });
+
+    function onNewMessage(value) {
+      if (value.room === room) {
+        setMessages(messages => [...messages, value]);
+      }
+    }
+
+
   function depictBattle(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
 
     const attackingCircleCount = ((whatsLeft + colorToElementScore(defendTroopColor)) / 100);
 
     console.log("ATTACKING:", attackingCircleCount);
     console.log("TO LOOT:", lifeLooted);
-    if (winnerLeftOrRight == "left") {
+    if (winnerLeftOrRight === "left") {
       // Attacker wins and loots
       // We are the defender
       animateCircles(attackingCircleCount, attackTroopColor, false); // incoming!
@@ -201,7 +209,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     const circlesToAnimate = helpers.calculateVisualCircles(attackingCircleCount);
 
     console.log("ATTACKINGS:", attackingCircleCount, attackTroopColor);
-    if (winnerLeftOrRight == "left") {
+    if (winnerLeftOrRight === "left") {
       console.log("LOOTING:", lifeLooted);
       // Attacker wins and loots
       // We are the attacker
@@ -216,7 +224,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
     for (let i = 0; i < circlesToAnimate.count; i++) {
       // Stagger the creation of each circle
       setTimeout(() => {
-        const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
+        const { arena, arenaWidth } = getArena();
 
         const circle = document.createElement('div');
         circle.className = isLooting ? 'alootcircle' : 'circle';
@@ -235,7 +243,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   }
 
     function moveCircle(circle) {
-      const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
+      const { arenaX, arenaY, centerX, centerY } = getArena();
         circle.dataset.moved = 0;
         const interval = setInterval(function () {
             const rect = circle.getBoundingClientRect();
@@ -263,101 +271,49 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         setTimeout(() => circle.remove(), 250); // Removes the circle after the effect
     }
 
-function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
-  const { arena, arenaRect, arenaX, arenaY, arenaWidth, arenaHeight, centerX, centerY } = getArena();
-  const smallCircleCount = circleCount / 100;
+    function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
+      const { arena, centerX, centerY } = getArena();
+      const smallCircleCount = circleCount / 100;
 
-  let circlesToAnimate = helpers.calculateVisualCircles(smallCircleCount);
+      let circlesToAnimate = helpers.calculateVisualCircles(smallCircleCount);
 
-  for (let i = 0; i < circlesToAnimate.count; i++) {
-    setTimeout(() => {
-      const circle = document.createElement('div');
-      circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
-      circle.style.backgroundColor = circleColor;
-      circle.style.opacity = '0';  // Start fully transparent
-      circle.style.transform = 'scale(0.25)'; // Start smaller
+      for (let i = 0; i < circlesToAnimate.count; i++) {
+        setTimeout(() => {
+          const circle = document.createElement('div');
+          circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
+          circle.style.backgroundColor = circleColor;
+          circle.style.opacity = '0';  // Start fully transparent
+          circle.style.transform = 'scale(0.25)'; // Start smaller
 
-      circle.style.width = `${circlesToAnimate.radius}px`;
-      circle.style.height = `${circlesToAnimate.radius}px`;
+          circle.style.width = `${circlesToAnimate.radius}px`;
+          circle.style.height = `${circlesToAnimate.radius}px`;
 
-      const randomizer = Math.random() * 10 - 10; // Random deviation from center, range -50 to +50 pixels
-      const randomizer2 = Math.random() * 15 - 10; // Random deviation from center, range -50 to +50 pixels
+          const randomizer = Math.random() * 10 - 10; // Random deviation from center, range -50 to +50 pixels
+          const randomizer2 = Math.random() * 15 - 10; // Random deviation from center, range -50 to +50 pixels
 
-      // Positioning circles at the center
-      circle.style.top = `${centerY - 35 + (randomizer)}px`; // Adjusted for the circle's size
-      circle.style.left = `${centerX - 15 + (randomizer2)}px`;
+          // Positioning circles at the center
+          circle.style.top = `${centerY - 35 + (randomizer)}px`; // Adjusted for the circle's size
+          circle.style.left = `${centerX - 15 + (randomizer2)}px`;
 
-      arena.appendChild(circle);
-      fadeAndMoveCircle(circle);
-    }, (i * 100) + ((Math.random() * 15) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
-  }
+          arena.appendChild(circle);
+          fadeAndMoveCircle(circle);
+        }, (i * 100) + ((Math.random() * 15) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
+      }
 
-  function fadeAndMoveCircle(circle) {
-    circle.style.transition = 'top 2s, left 2s, opacity 2s ease-in, transform 2s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    circle.style.opacity = '1';  // Fade in
-    circle.style.transform = 'scale(1)'; // Grow to full size
+      function fadeAndMoveCircle(circle) {
+        circle.style.transition = 'top 2s, left 2s, opacity 2s ease-in, transform 2s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        circle.style.opacity = '1';  // Fade in
+        circle.style.transform = 'scale(1)'; // Grow to full size
 
-    setTimeout(() => {
-        const deviation = Math.random() * 100 - 50; // Random deviation from center, range -50 to +50 pixels
-        circle.style.top = '-45px'; // Move above the top edge
-        circle.style.left = `${centerX - 10 + deviation}px`; // Move to a random position along the x-axis
-    }, 500);  // Start moving after fully appearing
+        setTimeout(() => {
+            const deviation = Math.random() * 100 - 50; // Random deviation from center, range -50 to +50 pixels
+            circle.style.top = '-45px'; // Move above the top edge
+            circle.style.left = `${centerX - 10 + deviation}px`; // Move to a random position along the x-axis
+        }, 500);  // Start moving after fully appearing
 
-    setTimeout(() => {
-        circle.remove();  // Remove circle from DOM after it moves out
-    }, 2500);  // Enough time to finish moving
-  }
-}
-
-  function downHandler({key}) {
-    if (key === 'Shift') {
-      setShiftHeld(true);
-    }
-  }
-
-  function upHandler({key}) {
-    if (key === 'Shift') {
-      setShiftHeld(false);
-    } else if (key === 'r') {
-      spawnAndMoveCircles(4, 'red', true);
-    } else if (key === 'a') {
-      depictAttack("lol", "left", "gray", "blue", 100, 200);
-      setTimeout(() => {
-        depictAttack("lol", "left", "red", "blue", 22000, 2200);
-
-      }, 1000);
-      setTimeout(() => {
-        depictAttack("lol", "left", "blue", "blue", 1000, 2200);
-
-      }, 1800);
-    //   setAlreadyDepictedBattles(prevIds => [...prevIds, "lol"]);
-    // } else {
-    //   //console.log("pressed:", key);
-    // }
-    // } else {
-    //   //console.log("pressed:", key);
-     }
-  }
-
-  useEffect(() => {
-    window.addEventListener('keydown', downHandler);
-    window.addEventListener('keyup', upHandler);
-
-    return () => {
-      window.removeEventListener('keydown', downHandler);
-      window.removeEventListener('keyup', upHandler);
-    };
-  }, []);
-
-  useEffect(() => {
-    socket.on("connection", (room) => {
-      console.log("JOINING ROOM:", room);
-      socket.join(room);
-    });
-
-    function onNewMessage(value) {
-      if (value.room === room) {
-        setMessages(messages => [...messages, value]);
+        setTimeout(() => {
+            circle.remove();  // Remove circle from DOM after it moves out
+        }, 2500);  // Enough time to finish moving
       }
     }
 
@@ -373,7 +329,7 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
           console.log("alreadyDepictedBattles:", alreadyDepBat.current);
           let winnerLeftOrRight = "left";
           let whatsLeft = value.attackRemaining > 0 ? value.attackRemaining : value.defendRemaining;
-          if (value.attackRemaining == 0 && value.defendRemaining > 0) {
+          if (value.attackRemaining === 0 && value.defendRemaining > 0) {
             winnerLeftOrRight = "right";
           }
 
@@ -442,7 +398,7 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
       socket.off('gameResults', onGameResults);
 
     };
-  }, [socket, currentUser.uid, room]);
+  }, [socket, currentUser.uid, room, processedEvents ]);
 
   function getArena() {
     const arena = document.getElementById('arena');
@@ -516,26 +472,6 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
     setCanCastSpell(lastSpellCastInRound < roundNumber);
   }, [roundNumber, lastSpellCastInRound])
 
-  const fn = (order, active = false, originalIndex = 0, curIndex = 0, y = 0) => (index) => {
-
-  let middlePadding = index > 1 ? 150 : 0;
-  return active && index === originalIndex
-    ? {
-        y: curIndex * 110 + y + middlePadding,
-        scale: 1.1,
-        zIndex: 1,
-        shadow: 15,
-        immediate: (key) => key === 'y' || key === 'zIndex',
-      }
-    : {
-        y: order.indexOf(index) * 110 + middlePadding,
-        scale: 1,
-        zIndex: 0,
-        shadow: 1,
-        immediate: false,
-      }
-  }
-
   function colorToElementScore(color) {
     if (color === "gray") {
       return airScoreRef.current;
@@ -548,35 +484,6 @@ function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
     } else {
       return 0
     }
-  }
-
-  function PrettyDraggableList({ items }) {
-    const order = useRef(items.map((_, index) => index)) // Store indicies as a local ref, this represents the item order
-    const [springs, api] = useSprings(items.length, fn(order.current)) // Create springs, each corresponds to an item, controlling its transform, scale, etc.
-    const bind = useDrag(({ args: [originalIndex], active, movement: [, y] }) => {
-      const curIndex = order.current.indexOf(originalIndex)
-      const curRow = clamp(Math.round((curIndex * 100 + y) / 100), 0, items.length - 1)
-      const newOrder = swap(order.current, curIndex, curRow)
-      api.start(fn(newOrder, active, originalIndex, curIndex, y)) // Feed springs new style data, they'll animate the view without causing a single render
-      if (!active) order.current = newOrder
-    })
-    return (
-      <div className={"content"} style={{ height: items.length * 50 }}>
-        {springs.map(({ zIndex, shadow, y, scale }, i) => (
-          <animated.div
-            {...bind(i)}
-            key={i}
-            style={{
-              zIndex,
-              boxShadow: shadow.to(s => `rgba(0, 0, 0, 0.15) 0px ${s}px ${2 * s}px 0px`),
-              y,
-              scale,
-            }}
-            children={items[i]}
-          />
-        ))}
-      </div>
-    )
   }
 
   if (gameIsOver) {

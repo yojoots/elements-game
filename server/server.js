@@ -18,7 +18,8 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://elements.game';
 const allowedOrigins = [
     'http://localhost:3000',     // Local development
     'https://elements.game',     // Production site
-    'https://www.elements.game'  // Production site with www
+    'https://www.elements.game',  // Production site with 'www' subdomain
+    'https://the.elements.game'  // Production site with 'the' subdomain
   ];
 
 // Middleware
