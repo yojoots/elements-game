@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Dashboard } from "./components/Dashboard";
 import { Toolbar } from "./components/Toolbar";
 import { Auth } from "./components/Auth";
@@ -58,7 +58,7 @@ function ElementsApp() {
           <button
             onClick={tryToJoin}
           >
-            Join
+            Join / Create
           </button>
         </div>
       ) : (

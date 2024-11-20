@@ -531,7 +531,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
   return (
     <>
       <div className="dashboard-app">
-        <div className="header pb-2 mb-2 fantasy">
+        <div className="header pb-2 mb-2">
           <div className="messages">
             <div className="pl-1 top-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
             { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">

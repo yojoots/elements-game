@@ -41,7 +41,7 @@ The build is minified and the filenames include the hashes.
 To deploy the front-end via Netlify:
 
 ```bash
-netlify deploy --prod
+npm run deploy
 ```
 
 To deploy the back-end via Heroku:
