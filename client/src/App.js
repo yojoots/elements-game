@@ -56,6 +56,7 @@ function ElementsApp() {
           <input onKeyDown={(e) => { if (e.key === 'Enter') { tryToJoin() }
           }} onChange={(e) => setRoom(e.target.value)} />
           <button
+            className="auth-button"
             onClick={tryToJoin}
           >
             Join / Create

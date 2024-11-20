@@ -585,11 +585,13 @@ export const Dashboard = ({ room, socket, currentUser }) => {
           <div
             className="weather">
             <p className="cursor-copy"
-            title={room}
-            onClick={() =>
-              copyToClipboard(room)
-            }
-          ><b>Room:</b> {room}</p>
+              title={room}
+              onClick={() =>
+                copyToClipboard(room)
+              }
+            >
+              <b>Room:</b> {room}
+            </p>
             {(showCopyTooltip && <div className="tooltip">Copied!</div>)}
             <p><b>Round:</b> {roundNumber}</p>
             <p><b>Weather:</b> {roundWeather}</p>
@@ -721,7 +723,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
                 </div>
               </div>) :
               (
-                <div className="w-full">
+                <div className="w-full mb-100">
                   <div className="centered"><button className="circleButton bigText" onClick={beginAutoProceeding}>⏱️</button></div>
                   <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div>
                 </div> 

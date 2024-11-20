@@ -50,7 +50,8 @@ h2 {
   text-align: center;
   margin: 5px;
 }
-.room button {
+
+.auth-button {
   width: 210px;
   height: 40px;
   border: none;
@@ -64,8 +65,22 @@ h2 {
   cursor: pointer;
 }
 
-.sign-out {
+.auth-button-section {
   margin-top: 50px;
+}
+
+.signout {
+  position: absolute;
+  bottom: 5px;
+  right: 8px;
+}
+
+.signout-button {
+  padding: 12px;
+  padding-top: 5px;
+  padding-bottom: 3px;
+  width: fit-content;
+  border-radius: 40px;
 }
 
 .centered {
