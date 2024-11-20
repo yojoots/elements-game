@@ -7,4 +7,4 @@ node_modules
 .netlify
 
 # Games folder
-server/games
+server/games/*.txt
