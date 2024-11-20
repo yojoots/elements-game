@@ -6,13 +6,14 @@ The front-end (client) is a React app. The back-end (server) is a minimal expres
 
 ## Running
 
-To run the front-end client:
+First, set things up by copying the `.env.example` file to `.env` and making sure real Firebase credentials/settings are included in it. After this has been done, you can run the front-end client:
 
 ```bash
+cd client
 npm start
 ```
 
-This runs the client in development mode.
+This will run the client in development mode.
 
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
@@ -20,13 +21,14 @@ The page will reload when you make changes.
 
 You may also see any lint errors in the console.
 
-To run the server:
+To run the server after its `.env` file has been readied:
 
 ```bash
-node server.js
+cd server
+npm start
 ```
 
-This runs the server on port 5001.
+This runs the server (on port 5001 by default).
 
 It must be running for the client(s) to work, as it manages game states and the clients need to connect to it (via websockets) to do anything.
 
@@ -38,10 +40,10 @@ The build is minified and the filenames include the hashes.
 
 ## TODO
 
+- [ ] Bots
 - [ ] Custom rule engine swapping
+- [ ] First to a game is rulesetter (form)
+    - [] Show settings to other joining players
 - [ ] Admin (or automatic) game cleanup
 - [ ] Better animations
 - [ ] Log reader
-- [ ] First to a game is rulesetter (form)
-    - [] Show settings to other joining players
-- [ ] Deploy to website
