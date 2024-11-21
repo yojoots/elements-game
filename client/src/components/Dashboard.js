@@ -3,10 +3,14 @@ import AnimatedBattleStats from "./AnimatedBattleStats";
 import { Draggable } from "../lib";
 import { serverTimestamp } from "firebase/firestore";
 import { SyncCountdownTimer } from "./SyncCountdownTimer";
+import { auth } from "../firebase-config.js";
+import { signOut } from "firebase/auth";
+import Cookies from "universal-cookie";
 
 import "../styles/Dashboard.css";
+const cookies = new Cookies();
 
-export const Dashboard = ({ room, socket, currentUser }) => {
+export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [nicknameInput, setNicknameInput] = useState("");
@@ -90,6 +94,13 @@ export const Dashboard = ({ room, socket, currentUser }) => {
         roomId: room,
         room
       })
+  };
+
+  const signUserOut = async () => {
+    await signOut(auth);
+    cookies.remove("auth-token");
+    setIsAuth(false);
+    setIsInChat(false);
   };
 
   const beginAutoProceeding = async (event) => {
@@ -707,29 +718,6 @@ export const Dashboard = ({ room, socket, currentUser }) => {
               </div>
             </div>
 
-            { isAutoProceed ?
-              (<div className="w-full timerbutton">
-                <div className="width-125">
-                  <SyncCountdownTimer
-                    duration={10}
-                    colors={['green', '#F7B801', '#ed6403', '#c50202']}
-                    colorsTime={[6, 4, 2, 1]}
-                    serverTimeRemaining={serverTime}
-                    onComplete={() => {
-                      return { shouldRepeat: true, delay: 0 }
-                    }}
-                  />
-                </div>
-                <div className="w-full"><button className="circleButton bigText stoppem" onClick={stopAutoProceeding}>⏱️</button></div> 
-              </div>) :
-              (
-                <div className="timerbutton">
-                  <div className="w-full"><button className="circleButton bigText" onClick={beginAutoProceeding}>⏱️</button></div>
-                  { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
-                </div> 
-              )
-            }
-
         <div id="battle"></div>
           {/* disable trollbox for now */
             false &&
@@ -757,6 +745,31 @@ export const Dashboard = ({ room, socket, currentUser }) => {
             </button>
           </form>
         }
+        { isAutoProceed ?
+          (<div className="w-full timer-button">
+            <div className="width-125">
+              <SyncCountdownTimer
+                duration={10}
+                colors={['green', '#F7B801', '#ed6403', '#c50202']}
+                colorsTime={[6, 4, 2, 1]}
+                serverTimeRemaining={serverTime}
+                onComplete={() => {
+                  return { shouldRepeat: true, delay: 0 }
+                }}
+              />
+            </div>
+            <div className="w-full"><button className="circleButton bigText stoppem" onClick={stopAutoProceeding}>⏱️</button></div>
+          </div>) :
+          (
+            <div className="timer-button">
+              <div className="w-full"><button className="circleButton bigText" onClick={beginAutoProceeding}>⏱️</button></div>
+              { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
+            </div>
+          )
+        }
+        <div className="signout">
+          <button title="Sign Out" className="auth-button signout-button" onClick={signUserOut}>⏻</button>
+        </div>
       </div>
     </>
   );
