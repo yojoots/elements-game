@@ -137,6 +137,7 @@ const initGame = (roomId) => {
         ante: 10.00,
         weather: "clear",
         roundDuration: 20, // Default round duration in seconds
+        firstPlayerId: null, // track first player
         allMoveHistory: ""
     }
 }
@@ -230,14 +231,27 @@ io.on('connection', (socket) => {
         let gameState = knownGameStates[roomId];
         if (gameState === undefined || !knownGameStates[roomId]) {
             console.log("CREATING ROOM/TABLE WITH ID:", roomId);
-            // If/once we allow customizing game settings, it'll go here
+            // once we allow customizing game settings, it'll go here
             knownGameStates[roomId] = initGame(roomId);
             gameState = knownGameStates[roomId];
+            gameState.firstPlayerId = userUid; // Set first player
         }
 
         addPlayerToGame(userUid, gameState);
 
         player = gameState.players.find((p) => {return p.id == userUid});
+
+        // Emit first player status
+        io.to(userUid).emit('firstPlayerStatus', {
+            isFirstPlayer: userUid === gameState.firstPlayerId
+        });
+
+        // Emit current game settings
+        io.to(roomId).emit('gameSettings', {
+            roundCount: gameState.roundCount,
+            roundDuration: gameState.roundDuration
+        });
+
         io.to(userUid).emit('playerState', {room: roomId, user: userUid, playerState: player});
         io.to(roomId).emit('newRound', {
             round: gameState.round,
@@ -252,6 +266,38 @@ io.on('connection', (socket) => {
             console.log(`Game ${roomId} complete; emitting game results`);
             io.to(roomId).emit('gameResults', gameState);
         }
+    });
+
+
+    // Add new socket handler for game settings updates
+    socket.on("updateGameSettings", (args) => {
+        if (!args.roomId) return;
+        
+        let gameState = knownGameStates[args.roomId];
+        if (gameState === undefined) return;
+
+        // Only allow first player to update settings
+        if (args.userUid !== gameState.firstPlayerId) return;
+
+        // Only allow updates before game starts
+        if (gameState.round > 0) return;
+
+        // Update settings
+        if (args.settings.roundCount) {
+            gameState.roundCount = Math.min(Math.max(parseInt(args.settings.roundCount), 1), 20);
+        }
+        if (args.settings.roundDuration) {
+            gameState.roundDuration = Math.min(Math.max(parseInt(args.settings.roundDuration), 5), 300);
+        }
+
+        // Save game state
+        saveGameState(gameState);
+
+        // Broadcast new settings to all players in the room
+        io.to(args.roomId).emit('gameSettings', {
+            roundCount: gameState.roundCount,
+            roundDuration: gameState.roundDuration
+        });
     });
 
     socket.on("submit", (args) => {
@@ -918,6 +964,12 @@ function processRoundAndProceed(roomId) {
         firePrice: gameState.firePrice,
         waterPrice: gameState.waterPrice,
     });
+
+    // Broadcast the reset timer state
+    io.to(roomId).emit('syncTimer', { 
+        remainingTime: gameState.remainingTime,
+        duration: gameState.roundDuration || COUNTDOWN_DURATION
+    });
 }
 const COUNTDOWN_DURATION = 20; // 20 seconds (the default duration)
 
@@ -939,14 +991,15 @@ setInterval(() => {
                 // Reset the timer using game-specific duration
                 gameState.remainingTime = gameState.roundDuration || COUNTDOWN_DURATION;
             } else {
-                // Emit the current remaining time to all clients in the room
+                // Emit both duration and remaining time to all clients
                 io.to(roomId).emit('syncTimer', { 
-                    remainingTime: gameState.remainingTime 
+                    remainingTime: gameState.remainingTime,
+                    duration: gameState.roundDuration || COUNTDOWN_DURATION
                 });
             }
         }
     }
-}, 1000)
+}, 1000);
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);

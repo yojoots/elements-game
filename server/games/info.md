@@ -1,1 +1,1 @@
-This is where game state info will go.
+Game histories/states will populate this folder.

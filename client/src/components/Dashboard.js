@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import AnimatedBattleStats from "./AnimatedBattleStats";
+import GameSettings from "./GameSettings";
 import { Draggable } from "../lib";
 import { serverTimestamp } from "firebase/firestore";
 import { SyncCountdownTimer } from "./SyncCountdownTimer";
@@ -17,6 +18,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [nickname, setNickname] = useState("Nickname");
   const [roundDuration, setRoundDuration] = useState(20);
   const [roundNumber, setRoundNumber] = useState(0);
+  const [roundCount, setRoundCount] = useState(5);
   const [isJoined, setIsJoined] = useState(false);
   const [gameIsOver, setGameIsOver] = useState(false);
   const [roundWeather, setRoundWeather] = useState("Clear");
@@ -48,6 +50,8 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [isAutoProceed, setIsAutoProceed] = useState(false);
   const [serverTime, setServerTime] = useState(null);
   const [showCopyTooltip, setShowCopyTooltip] = useState(false);
+  const [isFirstPlayer, setIsFirstPlayer] = useState(false);
+  const [gameSettings, setGameSettings] = useState(null);
 
   useEffect(() => {
     alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes
@@ -69,9 +73,23 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       setRoundDuration(data.roundDuration);
     });
 
+    socket.on('gameSettings', (settings) => {
+      setRoundDuration(settings.roundDuration);
+      setRoundCount(settings.roundCount);
+      setGameSettings(settings);
+    });
+  
+    socket.on('firstPlayerStatus', (status) => {
+      setIsFirstPlayer(status.isFirstPlayer);
+    });
+
     // Cleanup
     return () => {
-      socket.off(['syncTimer', 'roundDurationUpdate', 'paused']);
+      socket.off('syncTimer');
+      socket.off('roundDurationUpdate');
+      socket.off('paused');
+      socket.off('gameSettings');
+      socket.off('firstPlayerStatus');
     };
   }, [socket]);
 
@@ -547,6 +565,9 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
 
   if (gameIsOver) {
     return (
+      /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
+      /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
+      /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
       <div className="dashboard-app"> 
         <div className="header">
           <h2 className="mb-1">Game: {room || "Game"}</h2>
@@ -586,19 +607,21 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       <div className="dashboard-app">
         <div className="header pb-2 mb-2">
           <div className="messages">
-            <div className="pl-1 top-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
-            <i className="fa fa-sign-out signout-button" title="Log out" onClick={signUserOut}></i>
-            
-            { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
-              <input
-                type="text"
-                value={nicknameInput}
-                onChange={(event) => setNicknameInput(event.target.value)}
-                className="new-nickname-input"
-                placeholder="Edit nickname"
-              />
-              <button type="submit" className="nickname-button">⤴</button>
-            </form> ) }
+            <div className="pt-1 pl-6">
+              <div className="top-a1"><span className="pl-1 pr-14">Player:</span> {nickname.length > 0 ? nickname : currentUser.displayName} <small className="tiny" title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
+              <i className="fa fa-sign-out signout-button" title="Log out" onClick={signUserOut}></i>
+              
+              { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
+                <input
+                  type="text"
+                  value={nicknameInput}
+                  onChange={(event) => setNicknameInput(event.target.value)}
+                  className="new-nickname-input"
+                  placeholder="Edit nickname"
+                />
+                <button type="submit" className="nickname-button">⤴</button>
+              </form> ) }
+              </div>
             </div>
 
             <div className="attack-and-defense js-explosion">
@@ -621,6 +644,15 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             <p><b>Weather:</b> {roundWeather}</p>
           </div>
         </div>
+        {roundNumber === 0 && (
+          <GameSettings
+            socket={socket}
+            room={room}
+            userUid={currentUser.uid}
+            isFirstPlayer={isFirstPlayer}
+            currentSettings={gameSettings}
+          />
+        )}
         <div className="mainbuttons">
           <div id="arena" className="arena">
           <div className="container">
@@ -762,7 +794,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
           (<div className="w-full timer-button flex justify-center">
             <div className="w-16">
               <SyncCountdownTimer
-                duration={roundDuration || 20}
+                duration={roundDuration}
                 serverTimeRemaining={serverTime}
                 size={60}
                 onComplete={() => {

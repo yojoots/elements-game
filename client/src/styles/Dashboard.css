@@ -39,9 +39,8 @@
   height: 122px;
 }
 
-.top-1 {
+.top-a1 {
   position: absolute;
-  top: 25px;
 
   font-size: 1.17em;
   font-weight: bold;
@@ -57,11 +56,6 @@
 
 .flex {
   display: flex;
-}
-
-.text-black {
-  /*color: black;*/
-  font-size: 10px;
 }
 
 .text-gray {
@@ -440,13 +434,14 @@ h4 {
 }
 
 .new-nickname-input {
-  width: 90px;
+  width: 150px;
   outline: none;
   background: transparent;
   border: 1px dashed #7f7fbf;
   border-radius: 3px;
   margin-top: 2px;
   padding: 5px;
+  padding-left: 10px;
   margin-right: 3px;
   color: #c8e5ff;
 }
@@ -973,4 +968,10 @@ right: 310px;
   left: 100px;
   border-radius: 50%;
   box-shadow: 0 0 150px #fff, 0 0 150px #fff;
+}
+
+.tiny {
+  font-size: 8px;
+  position: relative;
+  bottom: 2px;
 }
