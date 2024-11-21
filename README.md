@@ -56,11 +56,15 @@ git push heroku master
 heroku ps:copy server/games/GAME_ID.txt
 ```
 
+## Viewing Server Logs on Heroku
+
+```bash
+heroku logs --tail
+```
+
 ## TODO
 
 - [ ] Bots
-- [ ] Custom rule engine swapping
-- [ ] First to a game is rulesetter (form)
-    - [] Show settings to other joining players
+- [ ] More GameSettings (rules) editability
+- [ ] Tooltip instructions
 - [ ] Better animations
-- [ ] Log reader
