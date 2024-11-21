@@ -15,6 +15,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [newMessage, setNewMessage] = useState("");
   const [nicknameInput, setNicknameInput] = useState("");
   const [nickname, setNickname] = useState("Nickname");
+  const [roundDuration, setRoundDuration] = useState(20);
   const [roundNumber, setRoundNumber] = useState(0);
   const [isJoined, setIsJoined] = useState(false);
   const [gameIsOver, setGameIsOver] = useState(false);
@@ -56,11 +57,21 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
     // Setup socket connection
     socket.on('syncTimer', (data) => {
       setServerTime(data.remainingTime);
+      setIsAutoProceed(true);
+    });
+
+    socket.on('paused', (data) => {
+      console.log("PAUSED");
+      setIsAutoProceed(false);
+    })
+
+    socket.on('roundDurationUpdate', (data) => {
+      setRoundDuration(data.roundDuration);
     });
 
     // Cleanup
     return () => {
-      socket.off('syncTimer');
+      socket.off(['syncTimer', 'roundDurationUpdate', 'paused']);
     };
   }, [socket]);
 
@@ -576,6 +587,8 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
         <div className="header pb-2 mb-2">
           <div className="messages">
             <div className="pl-1 top-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
+            <i className="fa fa-sign-out signout-button" title="Log out" onClick={signUserOut}></i>
+            
             { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
               <input
                 type="text"
@@ -746,18 +759,18 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
           </form>
         }
         { isAutoProceed ?
-          (<div className="w-full timer-button">
-            <div className="width-125">
+          (<div className="w-full timer-button flex justify-center">
+            <div className="w-16">
               <SyncCountdownTimer
-                duration={10}
-                colors={['green', '#F7B801', '#ed6403', '#c50202']}
-                colorsTime={[6, 4, 2, 1]}
+                duration={roundDuration || 20}
                 serverTimeRemaining={serverTime}
+                size={60}
                 onComplete={() => {
                   return { shouldRepeat: true, delay: 0 }
                 }}
               />
             </div>
+            
             <div className="w-full"><button className="circleButton bigText stoppem" onClick={stopAutoProceeding}>⏱️</button></div>
           </div>) :
           (
@@ -767,9 +780,6 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             </div>
           )
         }
-        <div className="signout">
-          <button title="Sign Out" className="auth-button signout-button" onClick={signUserOut}>⏻</button>
-        </div>
       </div>
     </>
   );

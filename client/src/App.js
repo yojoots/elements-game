@@ -8,6 +8,7 @@ import "./App.css";
 import io from 'socket.io-client';
 import { auth } from "./firebase-config";
 import { onAuthStateChanged } from "firebase/auth";
+import 'font-awesome/css/font-awesome.min.css';
 
 const cookies = new Cookies();
 const socket = io.connect(process.env.REACT_APP_SOCKET_SERVER, {

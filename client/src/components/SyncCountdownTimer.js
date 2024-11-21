@@ -1,101 +1,131 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import "../styles/SyncCountdownTimer.css";
 
-export const SyncCountdownTimer = ({ 
-  duration = 10, 
-  size = 130,
-  strokeWidth = 12,
-  colors = ['#004777', '#F7B801', '#ed6403', '#A30000'],
-  colorsTime = [7, 5, 2, 0],
-  isPlaying = true,
+export const SyncCountdownTimer = ({
+  duration = 20,
   serverTimeRemaining = null,
-  onComplete = () => ({ shouldRepeat: true, delay: 0 }),
-  className = ''
+  colors = ['green', '#F7B801', '#ed6403', '#c50202'],
+  size = 60,
+  strokeWidth = 4,
+  onComplete = () => ({ shouldRepeat: true, delay: 0 })
 }) => {
-  const [remainingTime, setRemainingTime] = useState(duration);
-  const timerRef = useRef(null);
-
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
+  const [timeLeft, setTimeLeft] = useState(duration);
+  const [color, setColor] = useState(colors[0]);
+  const lastServerSync = useRef(null);
+  const localStartTime = useRef(Date.now());
   
-  const getColor = (timeLeft) => {
-    const index = colorsTime.findIndex((t) => timeLeft > t);
-    return colors[index === -1 ? colors.length - 1 : index];
-  };
+  // Calculate time thresholds based on duration
+  const colorTimeThresholds = useMemo(() => {
+    // Create 4 thresholds: 30%, 20%, 10%, and 5% of total duration
+    return [
+      duration * 0.75,  // First color change at 30% remaining
+      duration * 0.5,  // Second color change at 20% remaining
+      duration * 0.25,  // Third color change at 10% remaining
+      duration * 0.1  // Final color change at 5% remaining
+    ];
+  }, [duration]);
 
+  // Reset timer when duration changes
+  useEffect(() => {
+    setTimeLeft(duration);
+  }, [duration]);
+
+  // Handle server time sync
   useEffect(() => {
     if (serverTimeRemaining !== null) {
-      setRemainingTime(serverTimeRemaining);
+      setTimeLeft(serverTimeRemaining);
+      lastServerSync.current = Date.now();
+      localStartTime.current = Date.now();
     }
   }, [serverTimeRemaining]);
 
+  // Main timer logic
   useEffect(() => {
-    if (isPlaying) {
-      timerRef.current = setInterval(() => {
-        setRemainingTime((time) => {
-          if (time <= 0) {
-            const { shouldRepeat, delay } = onComplete();
-            if (shouldRepeat) {
-              return duration;
-            }
-            clearInterval(timerRef.current);
-            return 0;
-          }
-          return time - 0.1;
-        });
-      }, 100);
+    const timer = setInterval(() => {
+      // If we have a server sync, use time since last sync
+      if (lastServerSync.current) {
+        const elapsed = (Date.now() - localStartTime.current) / 1000;
+        const estimatedTimeLeft = Math.max(0, serverTimeRemaining - elapsed);
+        setTimeLeft(estimatedTimeLeft);
+      }
+      // Otherwise just countdown normally
+      else {
+        setTimeLeft(prev => Math.max(0, prev - 0.1));
+      }
+    }, 100);
 
-      return () => clearInterval(timerRef.current);
+    return () => clearInterval(timer);
+  }, [serverTimeRemaining]);
+
+  // Update color based on time remaining
+  useEffect(() => {
+    let newColor = colors[colors.length - 1]; // Default to last color
+    
+    // Find the appropriate color based on time thresholds
+    for (let i = 0; i < colorTimeThresholds.length; i++) {
+      if (timeLeft > colorTimeThresholds[i]) {
+        newColor = colors[i];
+        break;
+      }
     }
-  }, [isPlaying, duration, onComplete]);
+    
+    setColor(newColor);
+  }, [timeLeft, colors, colorTimeThresholds]);
 
-  const strokeDashoffset = circumference - (remainingTime / duration) * circumference;
+  // Calculate circle properties
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const progress = Math.max(0, Math.min(1, timeLeft / duration));
+  const strokeDashoffset = (1 - progress) * circumference;
+
+  // Animation frames for pulse effect in last 10% of time
+  const pulseScale = timeLeft <= (duration * 0.1) ? 1 + (Math.sin(Date.now() / 200) * 0.05) : 1;
+
+  // Format time display
+  const displayTime = Math.ceil(timeLeft);
 
   return (
-    <div className={`${className}`}>
-        <div style={{ 
-            position: 'relative',
-            fontSize: '40px',
-            top: '87px',
-            marginLeft: '45%',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            width: 'min-content',
-        }}>
-            {Math.ceil(remainingTime)}
-        </div>
-      <svg
-        className="transform"
-        width={size}
-        height={size}
-        style={ {transform: 'rotate(90deg) scaleX(-1)'} }
-        viewBox={`0 0 ${size} ${size}`}
+    <div className="relative w-full h-full flex items-center justify-center">
+      <div 
+        className="relative transition-transform duration-200"
+        style={{ transform: `scale(${pulseScale})` }}
       >
-        {/* Background circle */}
-        <circle
-          className="transition-colors duration-300"
-          style={{ opacity: 0.2 }}
-          stroke={getColor(remainingTime)}
-          fill="none"
-          strokeWidth={strokeWidth}
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-        />
-        {/* Progress circle */}
-        <circle
-          className="transition-all duration-300 ease-linear"
-          stroke={getColor(remainingTime)}
-          fill="none"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-        />
-      </svg>
-
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="transform-rotate-90"
+        >
+          {/* Background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            className="fill-none"
+            stroke="#e6e6e6"
+            strokeWidth={strokeWidth}
+          />
+          {/* Progress circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            className="fill-none transition-colors duration-300"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+          />
+        </svg>
+        {/* Time display */}
+        <div 
+          className="absolute inset-0 flex items-center justify-center font-semibold text-lg transition-colors duration-300"
+          style={{ color }}
+        >
+          {displayTime}
+        </div>
+      </div>
     </div>
   );
 };

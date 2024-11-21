@@ -136,7 +136,7 @@ const initGame = (roomId) => {
         maxPlayers: 10,
         ante: 10.00,
         weather: "clear",
-        roundDuration: 30,
+        roundDuration: 20, // Default round duration in seconds
         allMoveHistory: ""
     }
 }
@@ -546,12 +546,47 @@ io.on('connection', (socket) => {
         }
         gameState.isTicking = false;
         console.log("STOPPED TIMER:", args.room);
+        io.to(args.room).emit('paused');
+        socket.to(args.room).emit('paused');
     });
 
     socket.on("nextRound", (args) => {
         roomId = args.room;
         processRoundAndProceed(roomId);
         console.log(`Manually proceeding to round ${gameState.round} in game ID: ${roomId}`);
+    });
+
+
+    socket.on("updateRoundDuration", (args) => {
+        if (!(args.roomId && args.userUid)) {
+            return;
+        }
+        let roomId = args.roomId;
+        let userId = args.userUid;
+        let gameState = knownGameStates[roomId];
+        
+        if (gameState === undefined) {
+            return;
+        }
+
+        // Only allow duration changes before the game starts
+        if (gameState.round > 0) {
+            return;
+        }
+
+        // Validate the new duration (minimum 5 seconds, maximum 300 seconds)
+        const newDuration = Math.min(Math.max(parseInt(args.duration) || 20, 5), 300);
+        
+        gameState.roundDuration = newDuration;
+        gameState.allMoveHistory += `[S:roundDuration(${newDuration})]`;
+        
+        saveGameState(gameState);
+        
+        // Notify all clients in the room about the duration change
+        io.to(roomId).emit('roundDurationUpdate', {
+            room: roomId,
+            roundDuration: newDuration
+        });
     });
 
     socket.on('disconnect', () => {
@@ -884,24 +919,25 @@ function processRoundAndProceed(roomId) {
         waterPrice: gameState.waterPrice,
     });
 }
-const COUNTDOWN_DURATION = 20; // seconds
+const COUNTDOWN_DURATION = 20; // 20 seconds (the default duration)
 
 setInterval(() => {
     for (const [roomId, gameState] of Object.entries(knownGameStates)) {
         if (gameState.isTicking) {
             // Initialize remainingTime if it doesn't exist
             if (gameState.remainingTime === undefined) {
-                gameState.remainingTime = COUNTDOWN_DURATION;
+                // Use game-specific duration or fall back to default
+                gameState.remainingTime = gameState.roundDuration || COUNTDOWN_DURATION;
             }
 
             gameState.remainingTime -= 1;
 
             if (gameState.remainingTime <= 0) {
                 // Time's up - process the round
-                console.log(`Ticking and proceedings to round ${gameState.round} in game ID: ${roomId}`);
+                console.log(`Ticking and proceeding to round ${gameState.round} in game ID: ${roomId}`);
                 processRoundAndProceed(roomId);
-                // Reset the timer
-                gameState.remainingTime = COUNTDOWN_DURATION;
+                // Reset the timer using game-specific duration
+                gameState.remainingTime = gameState.roundDuration || COUNTDOWN_DURATION;
             } else {
                 // Emit the current remaining time to all clients in the room
                 io.to(roomId).emit('syncTimer', { 
@@ -910,7 +946,7 @@ setInterval(() => {
             }
         }
     }
-}, 1000) // Run every second instead of every 10 seconds
+}, 1000)
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);

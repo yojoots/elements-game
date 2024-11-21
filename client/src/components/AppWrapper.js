@@ -15,7 +15,7 @@ export const AppWrapper = ({ children, isAuth, setIsAuth, setIsInChat }) => {
 
   return (
     <div className="App">
-      {isAuth && (
+      {false && isAuth && (
         <div className="signout">
           <button title="Sign Out" className="auth-button signout-button" onClick={signUserOut}>⏻</button>
         </div>

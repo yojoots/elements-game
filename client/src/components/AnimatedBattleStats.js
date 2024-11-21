@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useSpring, animated, config } from '@react-spring/web';
+import { useSpring, animated } from '@react-spring/web';
 
 const AnimatedCounter = ({ value, duration = 1000, delay = 0 }) => {
   const spring = useSpring({
