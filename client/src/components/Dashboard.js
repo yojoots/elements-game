@@ -597,7 +597,7 @@ export const Dashboard = ({ room, socket, currentUser }) => {
             <p><b>Weather:</b> {roundWeather}</p>
           </div>
         </div>
-        <div className="messages">
+        <div className="mainbuttons">
           <div id="arena" className="arena">
           <div className="container">
             <AnimatedBattleStats
