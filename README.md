@@ -38,18 +38,23 @@ The build is minified and the filenames include the hashes.
 
 ## Deploying
 
-To deploy the front-end via Netlify:
+To deploy the front-end with Netlify:
 
 ```bash
 npm run deploy
 ```
 
-To deploy the back-end via Heroku:
+To deploy the back-end with Heroku:
 
 ```bash
 git push heroku master
 ```
 
+## Saving Gamestates to Local Drive
+
+```bash
+heroku ps:copy server/games/GAME_ID.txt
+```
 
 ## TODO
 
@@ -57,6 +62,5 @@ git push heroku master
 - [ ] Custom rule engine swapping
 - [ ] First to a game is rulesetter (form)
     - [] Show settings to other joining players
-- [ ] Admin (or automatic) game cleanup
 - [ ] Better animations
 - [ ] Log reader

@@ -708,9 +708,8 @@ export const Dashboard = ({ room, socket, currentUser }) => {
             </div>
 
             { isAutoProceed ?
-              (<div className="w-full mb-100">
-                <div className="centered"><button className="circleButton bigText stoppem" onClick={stopAutoProceeding}>⏱️</button></div> 
-                <div className="centered">
+              (<div className="w-full timerbutton">
+                <div className="width-125">
                   <SyncCountdownTimer
                     duration={10}
                     colors={['green', '#F7B801', '#ed6403', '#c50202']}
@@ -721,11 +720,12 @@ export const Dashboard = ({ room, socket, currentUser }) => {
                     }}
                   />
                 </div>
+                <div className="w-full"><button className="circleButton bigText stoppem" onClick={stopAutoProceeding}>⏱️</button></div> 
               </div>) :
               (
-                <div className="w-full mb-100">
-                  <div className="centered"><button className="circleButton bigText" onClick={beginAutoProceeding}>⏱️</button></div>
-                  <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div>
+                <div className="timerbutton">
+                  <div className="w-full"><button className="circleButton bigText" onClick={beginAutoProceeding}>⏱️</button></div>
+                  { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
                 </div> 
               )
             }

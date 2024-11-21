@@ -1,19 +1,46 @@
 body {
   padding: 0;
   margin: 0;
+  height: 100vh; /* Ensure body takes full viewport height */
+  overflow: hidden; /* Prevent scrolling */
 }
 
 .App {
   display: flex;
-  align-items: center;
-  width: 100vw;
-  min-height: 100vh;
-  padding-bottom: 10px;
   flex-direction: column;
-  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh; /* Use minimum height of viewport */
+  height: 100vh; /* Force full height */
+  width: 100%;
+  padding: 0; /* Remove padding that could cause scrolling */
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #00011d1f;
+  overflow: hidden; /* Prevent scrolling */
 }
 
+.app-header {
+  text-align: center;
+  background-color: #000e2c;
+  color: white;
+  width: 100%;
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.flex-grow {
+  flex: 1 1 auto; /* grow, shrink, and auto basis */
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Take full height of parent */
+  overflow-y: auto; /* Allow scrolling within this container if needed */
+  position: relative; /* For absolute positioning of children if needed */
+}
+
+.signout {
+  position: fixed;
+  bottom: 5px;
+  right: 8px;
+  z-index: 1000; /* Ensure it stays on top */
+}
 .app-header {
   text-align: center;
   background-color: #000e2c;
@@ -69,8 +96,14 @@ h2 {
   margin-top: 50px;
 }
 
+.timerbutton {
+  position: fixed;
+  bottom: 5px;
+  left: 8px;
+}
+
 .signout {
-  position: absolute;
+  position: fixed;
   bottom: 5px;
   right: 8px;
 }
@@ -87,6 +120,10 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.flex-grow {
+  flex-grow: 1;
 }
 
 .w-full {

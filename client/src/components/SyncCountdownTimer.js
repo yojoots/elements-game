@@ -51,14 +51,15 @@ export const SyncCountdownTimer = ({
   const strokeDashoffset = circumference - (remainingTime / duration) * circumference;
 
   return (
-    <div className={`centered inline-flex items-center justify-center relative ${className}`}>
+    <div className={`${className}`}>
         <div style={{ 
             position: 'relative',
             fontSize: '40px',
             top: '87px',
-            // left: '75px',
-            textAlign: 'center',
-            left: '-1px',
+            marginLeft: '45%',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            width: 'min-content',
         }}>
             {Math.ceil(remainingTime)}
         </div>
