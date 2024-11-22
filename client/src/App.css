@@ -132,19 +132,14 @@ h2 {
   width: 100%;
 }
 
-.circleButton {
+.timer-button-holder {
   border-radius: 50%;
   width: 60px;
   height: 60px;
-  background-color: #559d5d36;
 }
 
 .bigText {
   font-size: 42px;
-}
-
-.stoppem {
-  background-color: #9d555536;
 }
 
 .score-animating {

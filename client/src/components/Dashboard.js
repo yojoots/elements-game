@@ -661,7 +661,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
         {!showSettings && roundNumber === 0 && (
           <button 
             onClick={() => setShowSettings(true)}
-            className="fixed bottom-4 right-4 p-2 text-black rounded shadow"
+            className="fixed bottom-4 right-4 p-2 text-blue-400 text-xs rounded shadow z-101"
           >
             ⚙️
           </button>
@@ -698,7 +698,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               <div className="empower element-buttons">
                 { airScore > 0 && earthScore > 0 && fireScore > 0 &&
                   <div>
-                    <div className={canCastSpell ? "text-black mb-1" : "text-gray mb-1"}>Empower</div>
+                    <div className={canCastSpell ? "text-blue-400 mb-1 spell-label" : "text-gray mb-1 spell-label"}>Empower</div>
                     <button disabled={!canCastSpell} onClick={(e) => castSpell("empower", e)}>⚔️</button>
                   </div>
                 }
@@ -707,7 +707,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 { waterScore > 0 && earthScore > 0 && fireScore > 0 &&
                   <div>
                     <button disabled={!canCastSpell} onClick={(e) => castSpell("fortify", e)}>🛡️</button>
-                    <div className={canCastSpell ? "text-black mt-1" : "text-gray mt-1"}>Fortify</div>
+                    <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>Fortify</div>
                   </div>
                 }
               </div>
@@ -715,14 +715,14 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 { airScore > 0 && fireScore > 0 && waterScore > 0 &&
                   <div>
                     <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
-                    <div className={canCastSpell ? "text-black mt-1" : "text-gray mt-1"}>Scry</div>
+                    <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>Scry</div>
                   </div>
                 }
               </div>
               <div className="seed element-buttons">
                 { airScore > 0 && earthScore > 0 && waterScore > 0 &&
                   <div>
-                    <div className={canCastSpell ? "text-black mb-1" : "text-gray mb-1"}>Seed</div>
+                    <div className={canCastSpell ? "text-blue-400 mb-1 spell-label" : "text-gray mb-1 spell-label"}>Seed</div>
                     <button disabled={!canCastSpell} onClick={(e) => castSpell("seed", e)}>🌿</button>
                   </div>
                 }
@@ -816,11 +816,11 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               />
             </div>
             
-            <div className="w-full"><button className="circleButton bigText stoppem" onClick={stopAutoProceeding}>⏱️</button></div>
+            <div className="w-full"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>
           </div>) :
           (
             <div className="timer-button">
-              <div className="w-full"><button className="circleButton bigText" onClick={beginAutoProceeding}>⏱️</button></div>
+              <div className="w-full"><button className="timer-button-holder bigText" onClick={beginAutoProceeding}>⏱️</button></div>
               { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
             </div>
           )

@@ -23,7 +23,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
   };
 
   return (
-    <div className="fixed inset-y-0 flex items-center justify-center z-50 top-20 mt-14">
+    <div className="fixed inset-y-0 flex min-w-full items-center justify-center z-50 top-20 mt-14">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 transform transition-all">
         <div className="border-b border-gray-200 p-4">
         <button 
