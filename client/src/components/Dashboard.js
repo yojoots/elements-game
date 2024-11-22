@@ -19,6 +19,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [roundDuration, setRoundDuration] = useState(20);
   const [roundNumber, setRoundNumber] = useState(0);
   const [roundCount, setRoundCount] = useState(5);
+  const [playerColor, setPlayerColor] = useState("black");
   const [isJoined, setIsJoined] = useState(false);
   const [gameIsOver, setGameIsOver] = useState(false);
   const [roundWeather, setRoundWeather] = useState("Clear");
@@ -52,6 +53,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [showCopyTooltip, setShowCopyTooltip] = useState(false);
   const [isFirstPlayer, setIsFirstPlayer] = useState(false);
   const [gameSettings, setGameSettings] = useState(null);
+  const [showSettings, setShowSettings] = useState(true);
 
   useEffect(() => {
     alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes
@@ -434,6 +436,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
         setNeighborhood(value.playerState.neighborhood);
         setAttacking(value.playerState.attacking);
         setLastSpellCastInRound(value.playerState.lastSpellCastInRound);
+        setPlayerColor(value.playerState.color)
       }
     }
 
@@ -574,7 +577,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
           <h3>Round: {roundNumber} (COMPLETE)</h3>
         </div>
         <div className="messages">
-          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small><small> {isJoined ? "🟢" : "🔴"}</small></h3>
+          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small><div className="active-player-color" color={playerColor}></div><small> {isJoined ? "🟢" : "🔴"}</small></h3>
             <div className="life-score">
               <h4>Final Life & Elements Score:</h4>
               <div className="life-emoji">🌱</div>
@@ -608,8 +611,9 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
         <div className="header pb-2 mb-2">
           <div className="messages">
             <div className="pt-1 pl-6">
-              <div className="top-a1"><span className="pl-1 pr-14">Player:</span> {nickname.length > 0 ? nickname : currentUser.displayName} <small className="tiny" title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
+              <div className="top-a1"><span className="pl-1 pr-2">Player:</span> {nickname.length > 0 ? nickname : currentUser.displayName} <small className="tiny" title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
               <i className="fa fa-sign-out signout-button" title="Log out" onClick={signUserOut}></i>
+              <div className="active-player-color" color={playerColor}></div>
               
               { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
                 <input
@@ -644,14 +648,23 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             <p><b>Weather:</b> {roundWeather}</p>
           </div>
         </div>
-        {roundNumber === 0 && (
+        {showSettings && roundNumber === 0 && (
           <GameSettings
             socket={socket}
             room={room}
             userUid={currentUser.uid}
             isFirstPlayer={isFirstPlayer}
             currentSettings={gameSettings}
+            setShowSettings={setShowSettings}
           />
+        )}
+        {!showSettings && roundNumber === 0 && (
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="fixed bottom-4 right-4 p-2 text-black rounded shadow"
+          >
+            ⚙️
+          </button>
         )}
         <div className="mainbuttons">
           <div id="arena" className="arena">

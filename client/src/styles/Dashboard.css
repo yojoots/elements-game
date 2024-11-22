@@ -434,7 +434,7 @@ h4 {
 }
 
 .new-nickname-input {
-  width: 150px;
+  width: 100px;
   outline: none;
   background: transparent;
   border: 1px dashed #7f7fbf;
@@ -444,6 +444,16 @@ h4 {
   padding-left: 10px;
   margin-right: 3px;
   color: #c8e5ff;
+  font-weight: 100;
+  font-size: 12px;
+  padding-top: 8px;
+}
+
+.active-player-color {
+  width: 15px;
+  border-radius: 50%;
+  display: inline;
+  background-color: white;
 }
 
 #trollbox {

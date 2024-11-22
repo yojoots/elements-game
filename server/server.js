@@ -272,7 +272,7 @@ io.on('connection', (socket) => {
     // Add new socket handler for game settings updates
     socket.on("updateGameSettings", (args) => {
         if (!args.roomId) return;
-        
+
         let gameState = knownGameStates[args.roomId];
         if (gameState === undefined) return;
 
@@ -297,6 +297,47 @@ io.on('connection', (socket) => {
         io.to(args.roomId).emit('gameSettings', {
             roundCount: gameState.roundCount,
             roundDuration: gameState.roundDuration
+        });
+    });
+
+    socket.on("startGame", (args) => {
+        if (!args.roomId) return;
+        let gameState = knownGameStates[args.roomId];
+        if (gameState === undefined) return;
+
+        // We *might* only want to allow first player to start the game
+        // but for now we're lazy
+        // if (args.userUid !== gameState.firstPlayerId) return;
+
+        // Only allow starting if game hasn't begun
+        if (gameState.round > 0) return;
+
+        // Start the game by incrementing round to 1
+        gameState.round = 1;
+
+        // Initialize the timer
+        gameState.isTicking = true;
+        gameState.remainingTime = gameState.roundDuration;
+
+        // Generate initial market prices and weather
+        gameState.weather = generateWeather();
+        let newPrices = generateMarket();
+        gameState.airPrice = newPrices.airPrice;
+        gameState.earthPrice = newPrices.earthPrice;
+        gameState.firePrice = newPrices.firePrice;
+        gameState.waterPrice = newPrices.waterPrice;
+
+        // Save the game state
+        saveGameState(gameState);
+
+        // Notify all clients about the new round
+        io.to(args.roomId).emit('newRound', {
+            round: gameState.round,
+            weather: gameState.weather,
+            airPrice: gameState.airPrice,
+            earthPrice: gameState.earthPrice,
+            firePrice: gameState.firePrice,
+            waterPrice: gameState.waterPrice,
         });
     });
 
