@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSettings }) => {
   const [roundCount, setRoundCount] = useState(currentSettings?.roundCount || 5);
   const [roundDuration, setRoundDuration] = useState(currentSettings?.roundDuration || 20);
+  const [numPlayers, setNumPlayers] = useState(currentSettings?.numPlayers || 4);
   const [settingsLocked, setSettingsLocked] = useState(false);
 
   const handleSubmit = (e) => {
@@ -13,6 +14,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
       settings: {
         roundCount: Math.min(Math.max(parseInt(roundCount), 1), 20),
         roundDuration: Math.min(Math.max(parseInt(roundDuration), 5), 300),
+        numPlayers: Math.min(Math.max(parseInt(numPlayers), 1), 20),
       }
     });
     setSettingsLocked(true);
@@ -68,19 +70,34 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
               )}
                 <div>
                     <div>
-                    <label htmlFor="roundCount" className="block text-sm font-medium text-gray-700 mb-1">
-                        Number of Rounds (1-20)
-                    </label>
-                    <input
-                        id="roundCount"
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={roundCount}
-                        onChange={(e) => setRoundCount(e.target.value)}
-                        disabled={settingsLocked}
-                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    />
+                        <label htmlFor="numPlayers" className="block text-sm font-medium text-gray-700 mb-1">
+                            Number of Players (1-20)
+                        </label>
+                        <input
+                            id="numPlayers"
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={numPlayers}
+                            onChange={(e) => setNumPlayers(e.target.value)}
+                            disabled={settingsLocked}
+                            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="roundCount" className="block text-sm font-medium text-gray-700 mb-1">
+                            Number of Rounds (1-20)
+                        </label>
+                        <input
+                            id="roundCount"
+                            type="number"
+                            min="1"
+                            max="20"
+                            value={roundCount}
+                            onChange={(e) => setRoundCount(e.target.value)}
+                            disabled={settingsLocked}
+                            className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
                     </div>
                     
                     <div>
@@ -105,6 +122,14 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
+                  Number of Players
+                </label>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                  {currentSettings?.numPlayers || 4}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
                   Number of Rounds
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
@@ -116,7 +141,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                   Round Duration
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
-                  {currentSettings?.roundDuration || 20} seconds
+                  {currentSettings?.roundDuration} seconds
                 </p>
               </div>
               <p className="text-sm text-gray-500 italic">

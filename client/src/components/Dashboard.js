@@ -138,7 +138,10 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
     event.preventDefault();
     setIsAutoProceed(true);
 
-    socket.emit("startRoundTimer", {room: room})
+    socket.emit("startRoundTimer", {
+      room: room,
+      roundDuration: roundDuration // Pass the current roundDuration
+    });
   };
 
   const stopAutoProceeding = async (event) => {
@@ -476,7 +479,6 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       socket.off('playerState', onPlayerState);
       socket.off('newRound', onNewRound);
       socket.off('gameResults', onGameResults);
-
     };
   }, [socket, currentUser.uid, room, processedEvents ]);
 

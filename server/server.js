@@ -74,10 +74,11 @@ const nameList = [
     'Legacy','Sharp','Dead','Mew','Chuckle','Bubba','Bubble','Sandwich','Smasher','Extreme','Multi','Universe','Ultimate','Death','Ready','Monkey','Elevator','Wrench','Grease','Head','Theme','Grand','Cool','Kid','Boy','Girl','Vortex','Paradox'
 ];
 
-const initPlayer = (userId, playerIndex) => {
+const initPlayer = (userId, playerIndex, isBot = false) => {
     return {
         id: userId,
         playerIndex: playerIndex,
+        isBot: isBot,
         nickname: nameList[Math.floor( Math.random() * nameList.length )],
         color: helpers.colorifyString(userId),
         neighborhood: [],
@@ -134,11 +135,128 @@ const initGame = (roomId) => {
         waterPrice: 0.25,
         players: [],
         maxPlayers: 10,
+        numPlayers: 4, // Default number of players including bots
         ante: 10.00,
         weather: "clear",
-        roundDuration: 20, // Default round duration in seconds
-        firstPlayerId: null, // track first player
+        roundDuration: 20,
+        firstPlayerId: null,
         allMoveHistory: ""
+    }
+}
+
+// bot-related helper functions
+function createBot(gameState, playerIndex) {
+    const botId = `bot-${crypto.randomBytes(8).toString('hex')}`;
+    return initPlayer(botId, playerIndex, true);
+}
+
+function addBotsIfNeeded(gameState) {
+    if (gameState.round > 0) return; // Don't add bots once game has started
+
+    const humanPlayers = gameState.players.filter(p => !p.id.startsWith('bot-')).length;
+    const botsNeeded = gameState.numPlayers - humanPlayers;
+
+    if (botsNeeded > 0) {
+        console.log(`Adding ${botsNeeded} bots to game ${gameState.roomId}`);
+        for (let i = 0; i < botsNeeded; i++) {
+            const bot = createBot(gameState, gameState.players.length + 1);
+            bot.isBot = true;
+            bot.nickname = `Bot-${nameList[Math.floor(Math.random() * nameList.length)]}`;
+            gameState.players.push(bot);
+        }
+    }
+}
+
+function processBotActions(gameState, bot) {
+    // Bot's turn to take actions
+    const actions = ['convert', 'attack', 'spell', 'nothing'];
+    const chosenAction = actions[Math.floor(Math.random() * actions.length)];
+
+    switch(chosenAction) {
+        case 'convert':
+            if (bot.life >= 100) {
+                const elements = ['air', 'earth', 'fire', 'water'];
+                const element = elements[Math.floor(Math.random() * elements.length)];
+                const amount = Math.floor(Math.random() * 5) + 1; // Convert 1-5 life units
+
+                if (element === 'air') {
+                    bot.air += (amount * 100 / gameState.airPrice);
+                } else if (element === 'earth') {
+                    bot.earth += (amount * 100 / gameState.earthPrice);
+                } else if (element === 'fire') {
+                    bot.fire += (amount * 100 / gameState.firePrice);
+                } else if (element === 'water') {
+                    bot.water += (amount * 100 / gameState.waterPrice);
+                }
+                bot.life -= amount * 100;
+                gameState.allMoveHistory += `[P${bot.playerIndex}:convert(${element})]`;
+            }
+            break;
+
+        case 'attack':
+            if (bot.neighborhood && bot.neighborhood.length > 0) {
+                const targetIndex = Math.floor(Math.random() * bot.neighborhood.length);
+                bot.attacking = bot.neighborhood[targetIndex].playerIndex;
+                gameState.allMoveHistory += `[P${bot.playerIndex}:attack(${bot.attacking})]`;
+            }
+            break;
+
+        case 'spell':
+            if (bot.lastSpellCastInRound < gameState.round) {
+                const availableSpells = [];
+
+                if (bot.air >= 100 && bot.earth >= 100 && bot.fire >= 100) {
+                    availableSpells.push('empower');
+                }
+                if (bot.fire >= 100 && bot.earth >= 100 && bot.water >= 100) {
+                    availableSpells.push('fortify');
+                }
+                if (bot.air >= 100 && bot.fire >= 100 && bot.water >= 100) {
+                    availableSpells.push('scry');
+                }
+                if (bot.air >= 100 && bot.earth >= 100 && bot.water >= 100) {
+                    availableSpells.push('seed');
+                }
+
+                if (availableSpells.length > 0) {
+                    const spell = availableSpells[Math.floor(Math.random() * availableSpells.length)];
+
+                    switch(spell) {
+                        case 'empower':
+                            bot.air -= 100;
+                            bot.earth -= 100;
+                            bot.fire -= 100;
+                            bot.empower += 1000;
+                            break;
+                        case 'fortify':
+                            bot.fire -= 100;
+                            bot.earth -= 100;
+                            bot.water -= 100;
+                            bot.fortify += 1000;
+                            break;
+                        case 'scry':
+                            bot.air -= 100;
+                            bot.fire -= 100;
+                            bot.water -= 100;
+                            bot.isScrying = true;
+                            break;
+                        case 'seed':
+                            bot.air -= 100;
+                            bot.earth -= 100;
+                            bot.water -= 100;
+                            bot.life += 300;
+                            break;
+                    }
+                    bot.lastSpellCastInRound = gameState.round;
+                    gameState.allMoveHistory += `[P${bot.playerIndex}:spell(${spell})]`;
+                }
+            }
+            break;
+
+        case 'nothing':
+            // Bot chooses to do nothing this turn
+            gameState.allMoveHistory += `[P${bot.playerIndex}:nothing]`;
+            break;
     }
 }
 
@@ -277,7 +395,7 @@ io.on('connection', (socket) => {
         if (gameState === undefined) return;
 
         // Only allow first player to update settings
-        if (args.userUid !== gameState.firstPlayerId) return;
+        //if (args.userUid !== gameState.firstPlayerId) return;
 
         // Only allow updates before game starts
         if (gameState.round > 0) return;
@@ -289,6 +407,9 @@ io.on('connection', (socket) => {
         if (args.settings.roundDuration) {
             gameState.roundDuration = Math.min(Math.max(parseInt(args.settings.roundDuration), 5), 300);
         }
+        if (args.settings.numPlayers) {
+            gameState.numPlayers = Math.min(Math.max(parseInt(args.settings.numPlayers), 1), 20);
+        }
 
         // Save game state
         saveGameState(gameState);
@@ -296,10 +417,12 @@ io.on('connection', (socket) => {
         // Broadcast new settings to all players in the room
         io.to(args.roomId).emit('gameSettings', {
             roundCount: gameState.roundCount,
-            roundDuration: gameState.roundDuration
+            roundDuration: gameState.roundDuration,
+            numPlayers: gameState.numPlayers
         });
     });
 
+    
     socket.on("startGame", (args) => {
         if (!args.roomId) return;
         let gameState = knownGameStates[args.roomId];
@@ -311,6 +434,9 @@ io.on('connection', (socket) => {
 
         // Only allow starting if game hasn't begun
         if (gameState.round > 0) return;
+
+        // Add bots before starting the game
+        addBotsIfNeeded(gameState);
 
         // Start the game by incrementing round to 1
         gameState.round = 1;
@@ -337,7 +463,7 @@ io.on('connection', (socket) => {
             airPrice: gameState.airPrice,
             earthPrice: gameState.earthPrice,
             firePrice: gameState.firePrice,
-            waterPrice: gameState.waterPrice,
+            waterPrice: gameState.waterPrice
         });
     });
 
@@ -929,8 +1055,14 @@ function processRoundAndProceed(roomId) {
 
     for (turn of playerTurns) {
         playingPlayer = gameState.players[turn];
+
+        // Handle bot actions
+        if (playingPlayer.isBot) {
+            processBotActions(gameState, playingPlayer);
+        }
+
         console.log("TURN", turn);
-        console.log("PLAYING PLAYER:", playingPlayer);
+        console.log("PLAYING PLAYER:", playingPlayer.id);
         if (playingPlayer.attacking > 0) {
             let defendingPlayer = getPlayerByPlayerIndex(gameState, playingPlayer.attacking);
             if (defendingPlayer.id === playingPlayer.id) {
@@ -985,7 +1117,9 @@ function processRoundAndProceed(roomId) {
         player.attacking = "";
         player.isScrying = false;
         generateNeighborhood(gameState, player.playerIndex);
-        io.to(player.id).emit('playerState', {room: roomId, user: player.id, playerState: player});
+        if (!player.isBot) {
+            io.to(player.id).emit('playerState', {room: roomId, user: player.id, playerState: player});
+        }
     }
 
     gameState.weather = generateWeather();
@@ -997,22 +1131,24 @@ function processRoundAndProceed(roomId) {
     gameState.round = gameState.round + 1;
     gameState.allMoveHistory += `[S:a(${gameState.airPrice}),e(${gameState.earthPrice}),f(${gameState.firePrice}),w(${gameState.waterPrice}),weather(${gameState.weather})]`
     saveGameState(gameState);
+
+    gameState.remainingTime = gameState.roundDuration;
+
     io.to(roomId).emit('newRound', {
         round: gameState.round,
         weather: gameState.weather,
         airPrice: gameState.airPrice,
         earthPrice: gameState.earthPrice,
         firePrice: gameState.firePrice,
-        waterPrice: gameState.waterPrice,
+        waterPrice: gameState.waterPrice
     });
 
     // Broadcast the reset timer state
     io.to(roomId).emit('syncTimer', { 
         remainingTime: gameState.remainingTime,
-        duration: gameState.roundDuration || COUNTDOWN_DURATION
+        duration: gameState.roundDuration
     });
 }
-const COUNTDOWN_DURATION = 20; // 20 seconds (the default duration)
 
 setInterval(() => {
     for (const [roomId, gameState] of Object.entries(knownGameStates)) {
@@ -1020,7 +1156,7 @@ setInterval(() => {
             // Initialize remainingTime if it doesn't exist
             if (gameState.remainingTime === undefined) {
                 // Use game-specific duration or fall back to default
-                gameState.remainingTime = gameState.roundDuration || COUNTDOWN_DURATION;
+                gameState.remainingTime = gameState.roundDuration;
             }
 
             gameState.remainingTime -= 1;
@@ -1030,12 +1166,12 @@ setInterval(() => {
                 console.log(`Ticking and proceeding to round ${gameState.round} in game ID: ${roomId}`);
                 processRoundAndProceed(roomId);
                 // Reset the timer using game-specific duration
-                gameState.remainingTime = gameState.roundDuration || COUNTDOWN_DURATION;
+                gameState.remainingTime = gameState.roundDuration;
             } else {
                 // Emit both duration and remaining time to all clients
                 io.to(roomId).emit('syncTimer', { 
                     remainingTime: gameState.remainingTime,
-                    duration: gameState.roundDuration || COUNTDOWN_DURATION
+                    duration: gameState.roundDuration
                 });
             }
         }
