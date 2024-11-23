@@ -243,11 +243,15 @@
 }
 
 #arena {
-  position: relative; /* Parent must be positioned */
+   /*position: relative; Parent must be positioned */
   /* width: 300px; /* Set your desired dimensions */
   /* height: 300px; */
   /* border: 1px solid black; */
   /* overflow: hidden; Keeps circles within the arena */
+}
+
+.small-caps {
+  font-variant: small-caps;
 }
 
 .circle {

@@ -696,7 +696,9 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 elementOrder={elementOrder}
                 onConvertLifeTo={convertLifeTo}
               />
-              <InfoBubble className="absolute -right-0 top-1/2 transform" tooltipStyle={{top: "90px", right: "0px"}}>
+              <InfoBubble className="absolute -right-0 top-1/2 transform" tooltipStyle={{top: "65px", right: "2px"}}>
+                <b className="small-caps">Elements Battle For Life</b>
+                <br />
                 Convert life force into elements. Each element has a dynamic price which will fluctuate each round.
               </InfoBubble>
             </div>
@@ -705,11 +707,15 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 <div><strong>{Math.round(lifeScore / 100)}</strong></div>
               </div> */}
               <div className="middleColumn relative" title={elementOrder}>
-                <InfoBubble className="absolute -right-64 top-0" direction="right" tooltipStyle={{top: '445px', right: '115px', width: '200px'}}>
-                  Drag (or long-press) to reorder elements. The order determines battle advantages!
+                <InfoBubble className="absolute -right-64 top-0" direction="lowright" tooltipStyle={{top: '400px', right: '115px', width: '200px'}}>
+                  <b className="small-caps">Element Order Matters</b>
+                  <br />
+                  Order determines battle advantages. Drag or long-press to reorder elements (top first). <br />💧 &gt; 🔥 &gt; 💨 &gt; ⛰️ &gt; 💧...
                 </InfoBubble>
                 <InfoBubble className="absolute -right-64 top-0" direction="right" tooltipStyle={{top: '200px', right: '115px', width: '200px'}}>
-                  This is your life score. Life automatically grows each round, and can be converted into elements. Successful attacks will loot other players' life.
+                  <b className="small-caps">Most Life Wins</b>
+                  <br />
+                  Life automatically grows each round, and can be converted into elements. Successful attacks will loot other players' life.<br />
                 </InfoBubble>
                 <Draggable onPosChangeTwo={reorderElements}>
                   <div id="airOrderDiv" data-elch={"a"} className="anyElement"><span>💨</span></div>
@@ -739,9 +745,11 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               <ForceVisibleWhen when={airScore > 0 && fireScore > 0 && waterScore > 0}>
                 <div>
                   <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
-                  <InfoBubble className="absolute -left-64 top-0" direction="left" tooltipStyle={{top: "-10px", left: "100px", width: '160px'}}>
-                      Cast spells by combining the elements you have. Costs 3 elements per spell.
-                    </InfoBubble>
+                  <InfoBubble className="absolute -left-64 top-0" direction="left" tooltipStyle={{top: "0px", left: "100px", width: '170px'}}>
+                    <b className="small-caps">Spells Cost Elements</b>
+                    <br />
+                    Combine 3 elements to cast a spell 1x per round.<br />
+                  </InfoBubble>
                   <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>
                     Scry
                   </div>
@@ -857,18 +865,20 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
           )
         }
 
-      <div className="absolute">
-        <ForceVisibleWhen when={roundNumber > 0}>
-            <FloatingMenu 
-              neighborhood={neighborhood}
-              attacking={attacking}
-              onAttackClick={(playerIndex) => queueAttack(playerIndex)}
-            />
+        <div className="absolute">
+          <ForceVisibleWhen when={roundNumber > 0}>
+              <FloatingMenu 
+                neighborhood={neighborhood}
+                attacking={attacking}
+                onAttackClick={(playerIndex) => queueAttack(playerIndex)}
+              />
 
-        </ForceVisibleWhen>
-      </div>
-      <InfoBubble className="absolute " direction="right" tooltipStyle={{bottom: "15px", right: "105px", width: '160px'}}>
-          Attack neighboring players using this menu during the game.
+          </ForceVisibleWhen>
+        </div>
+        <InfoBubble className="absolute " direction="lowright" tooltipStyle={{bottom: "25px", right: "105px", width: '160px'}}>
+            <b className="small-caps">Attack</b>
+            <br />
+            Use this menu during the game to attack neighboring players with your elements.
         </InfoBubble>
       </div>
     </TooltipProvider>
