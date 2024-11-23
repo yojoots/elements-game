@@ -624,7 +624,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   return (
     <TooltipProvider>
       <div className="dashboard-app">
-        <div className="header pb-2 mb-2">
+        <div className="header fixed">
           <div className="messages">
             <div className="pt-1 pl-6">
             <div className="top-a1 flex font-semibold	z-100">
@@ -706,17 +706,17 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 <span>🌱</span>
                 <div><strong>{Math.round(lifeScore / 100)}</strong></div>
               </div> */}
+              <InfoBubble className="absolute top-0" direction="lowright" tooltipStyle={{top: '470px', left: '0px', width: '200px'}}>
+                <b className="small-caps">Element Order Matters</b>
+                <br />
+                Order determines battle advantages. Drag or long-press to reorder elements (top first). <br />💧 &gt; 🔥 &gt; 💨 &gt; ⛰️ &gt; 💧...
+              </InfoBubble>
+              <InfoBubble className="absolute top-0" direction="right" tooltipStyle={{top: '280px', left: '0px', width: '200px'}}>
+                <b className="small-caps">Most Life Wins</b>
+                <br />
+                Life automatically grows each round, and can be converted into elements. Successful attacks will loot other players' life.<br />
+              </InfoBubble>
               <div className="middleColumn relative" title={elementOrder}>
-                <InfoBubble className="absolute -right-64 top-0" direction="lowright" tooltipStyle={{top: '400px', right: '115px', width: '200px'}}>
-                  <b className="small-caps">Element Order Matters</b>
-                  <br />
-                  Order determines battle advantages. Drag or long-press to reorder elements (top first). <br />💧 &gt; 🔥 &gt; 💨 &gt; ⛰️ &gt; 💧...
-                </InfoBubble>
-                <InfoBubble className="absolute -right-64 top-0" direction="right" tooltipStyle={{top: '200px', right: '115px', width: '200px'}}>
-                  <b className="small-caps">Most Life Wins</b>
-                  <br />
-                  Life automatically grows each round, and can be converted into elements. Successful attacks will loot other players' life.<br />
-                </InfoBubble>
                 <Draggable onPosChangeTwo={reorderElements}>
                   <div id="airOrderDiv" data-elch={"a"} className="anyElement"><span>💨</span></div>
                   <div id="earthOrderDiv" data-elch={"e"} className="anyElement"><span>⛰️</span></div>
@@ -875,7 +875,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
 
           </ForceVisibleWhen>
         </div>
-        <InfoBubble className="absolute " direction="lowright" tooltipStyle={{bottom: "25px", right: "105px", width: '160px'}}>
+        <InfoBubble className="fixed " direction="lowright" tooltipStyle={{bottom: "25px", right: "105px", width: '160px'}}>
             <b className="small-caps">Attack</b>
             <br />
             Use this menu during the game to attack neighboring players with your elements.
