@@ -102,14 +102,8 @@ h2 {
 
 .timer-button {
   position: fixed;
-  bottom: 5px;
-  left: 8px;
-}
-
-.timer-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  bottom: 10px;
+  left: 14px;
 }
 
 .signout {

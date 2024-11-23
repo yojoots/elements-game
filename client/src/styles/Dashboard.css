@@ -35,8 +35,12 @@
   width: 100%;
   text-align: center;
   /* border-bottom: 1px solid #21c80b42; */
-  padding-top: 20px;
+  /* padding-top: 20px; */
   height: 122px;
+}
+
+.game-over-header {
+  margin-top: 80px;
 }
 
 .top-a1 {
@@ -171,6 +175,9 @@
   /* margin: auto; */
   margin-top: 10px;
   margin-bottom: 10px;
+  position: fixed;
+  bottom: 15px;
+  z-index: 102;
 }
 
 .neighborhood-buttons > span {
@@ -203,6 +210,7 @@
   text-shadow: 2px 2px black;
   font-size: 20px;
   margin-right: 10px;
+  margin-top: 8px;
 }
 
 .player-buttons {
@@ -232,6 +240,7 @@
   /* height: 300px; */
   /* border: 1px solid black; */
   overflow: hidden; /* Keeps circles within the arena */
+  top: -100px;
 }
 
 .circle {
@@ -435,14 +444,15 @@ h4 {
 }
 
 .new-nickname-input {
-  width: 100px;
+  width: 90px;
   outline: none;
   background: transparent;
   border: 1px dashed #7f7fbf;
   border-radius: 3px;
   margin-top: 2px;
   padding: 5px;
-  padding-left: 10px;
+  padding-top: 0px;
+  padding-left: 6px;
   margin-right: 3px;
   color: #c8e5ff;
   font-weight: 100;
@@ -451,10 +461,12 @@ h4 {
 }
 
 .active-player-color {
-  width: 15px;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 10px;
+  margin-bottom: 1px;
   border-radius: 50%;
-  display: inline;
-  background-color: white;
 }
 
 #trollbox {
@@ -468,6 +480,12 @@ h4 {
   width: 125px;
 }
 
+.leaderboard-header {
+  font-size: 30px;
+  border-bottom: 1px solid white;
+  margin-bottom: 10px;
+  text-align: center;
+}
 
 .signout-button {
   padding-left: 2px;
@@ -820,92 +838,83 @@ text-align: center;
 }
 
 .airItem {
-float: left;
-margin-left: 20px;
--moz-box-shadow: 0px 1px 1px #e5f7fc;
--webkit-box-shadow: 0px 1px 1px #e5f7fc;
-box-shadow: 0px 1px 1px #e5f7fc;
-animation: breathingGray 3s linear infinite;
--ms-animation: breathingGray 3s linear infinite;
--webkit-animation: breathingGray 3s linear infinite;
--moz-animation: breathingGray 3s linear infinite;
--o-animation: breathingGray 3s linear infinite;
+  float: left;
+  margin-left: 20px;
+  -moz-box-shadow: 0px 1px 1px #e5f7fc;
+  -webkit-box-shadow: 0px 1px 1px #e5f7fc;
+  box-shadow: 0px 1px 1px #e5f7fc;
+  animation: breathingGray 3s linear infinite;
+  -ms-animation: breathingGray 3s linear infinite;
+  -webkit-animation: breathingGray 3s linear infinite;
+  -moz-animation: breathingGray 3s linear infinite;
+  -o-animation: breathingGray 3s linear infinite;
 }
 .airItem h1 {
-color: #666;
-font-weight: 500;
-padding-top: 45%;
-text-align: center;
+  color: #666;
+  font-weight: 500;
+  padding-top: 45%;
+  text-align: center;
 }
 
 
 .earthItem {
-float: left;
-margin-left: 20px;
--moz-box-shadow: 0px 1px 1px #1f1404;
--webkit-box-shadow: 0px 1px 1px #1f1404;
-box-shadow: 0px 1px 1px #1f1404;
-animation: breathingBrown 3s linear infinite;
--ms-animation: breathingBrown 3s linear infinite;
--webkit-animation: breathingBrown 3s linear infinite;
--moz-animation: breathingBrown 3s linear infinite;
--o-animation: breathingBrown 3s linear infinite;
+  float: left;
+  margin-left: 20px;
+  -moz-box-shadow: 0px 1px 1px #1f1404;
+  -webkit-box-shadow: 0px 1px 1px #1f1404;
+  box-shadow: 0px 1px 1px #1f1404;
+  animation: breathingBrown 3s linear infinite;
+  -ms-animation: breathingBrown 3s linear infinite;
+  -webkit-animation: breathingBrown 3s linear infinite;
+  -moz-animation: breathingBrown 3s linear infinite;
+  -o-animation: breathingBrown 3s linear infinite;
 }
 .earthItem h1 {
-color: #666;
-font-weight: 500;
-padding-top: 45%;
-text-align: center;
+  color: #666;
+  font-weight: 500;
+  padding-top: 45%;
+  text-align: center;
 }
 
 .middleColumn {
-display: flex;
-flex-direction: column;
-gap: 9px;
-position: absolute;
-top: 80px;
-left: 225px;
-border-radius: 50%;
-width: 100px;
-height: 100%;
-z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  position: absolute;
+  top: 80px;
+  left: 225px;
+  border-radius: 50%;
+  width: 100px;
+  height: 100%;
+  z-index: 1;
 }
 
 .middleColumn div:nth-child(2) {
-margin-bottom: 110px;
+  margin-bottom: 110px;
 }
 
 
 
 .btn-4 {
---clr: #6cd598d1;
---outline: 1px solid #6cd598d1;
-color: var(--clr);
-outline: var(--outline);
-border: var(--outline);
-outline-offset: -1px;
-/*transition: outline-width 200ms ease, outline-offset 200ms ease;*/
-transition: box-shadow 300ms ease;
+  --clr: #6cd598d1;
+  --outline: 1px solid #6cd598d1;
+  color: var(--clr);
+  outline: var(--outline);
+  border: var(--outline);
+  outline-offset: -1px;
+  /*transition: outline-width 200ms ease, outline-offset 200ms ease;*/
+  transition: box-shadow 300ms ease;
 }
 
 .btn-4:hover,
 .btn-4:focus {
-/*outline: var(--outline);
-outline-width: 3px;
-outline-offset: -3px;
-filter: blur(2px);*/
-box-shadow: inset 0px 0px 2px 2px #6cd598d1;
+  /*outline: var(--outline);
+  outline-width: 3px;
+  outline-offset: -3px;
+  filter: blur(2px);*/
+  box-shadow: inset 0px 0px 2px 2px #6cd598d1;
 }
 
-#myCanvas {
-position: absolute;
-width: 480px;
-height: 540px;
-z-index: 20;
-pointer-events: none;
-top: 80px;
-right: 310px;
-}
 
 .container {
   min-width: 600px;

@@ -121,7 +121,9 @@ const initGame = (roomId) => {
     } catch (err) {
         // Here you get the error when the file was not found,
         // but you also get any other error
-        console.log(`ERROR READING FILE: ./games/${roomId}.txt : ${err}`);
+        if (!err.toString().startsWith("Error: ENOENT: no such file or directory, open")) {
+            console.log(`ERROR READING FILE: ./games/${roomId}.txt : ${err}`);
+        }
     }
 
     return {
@@ -169,7 +171,7 @@ function addBotsIfNeeded(gameState) {
 
 function processBotActions(gameState, bot) {
     // Bot's turn to take actions
-    const actions = ['convert', 'attack', 'spell', 'nothing'];
+    const actions = ['convert', 'attack', 'spell', 'nothing', 'attack', 'attack', 'attack'];
     const chosenAction = actions[Math.floor(Math.random() * actions.length)];
 
     switch(chosenAction) {
@@ -264,7 +266,7 @@ let knownGameStates = {}
 
 function addPlayerToGame(userId, gameState) {
     if (gameState.round > 0) {
-        console.log(`User ${userId} cannot join game ${gameState.roomId} already in-progress (round ${gameState.round})`);
+        // Can't join game already in-progress
         return;
     }
 
@@ -272,7 +274,6 @@ function addPlayerToGame(userId, gameState) {
 
     if (player !== undefined) {
         // Don't try to double-add
-        console.log(`User ${userId} already in game ${gameState.roomId}`);
         return;
     }
 
@@ -318,9 +319,6 @@ function saveGameState(gameState) {
     fs.writeFile(`./games/${gameState.roomId}.txt`, content, err => {
         if (err) {
           console.error(err);
-        } else {
-          // file written successfully
-          console.log("WROTE GAMESTATE:", gameState.roomId)
         }
     });
 }
@@ -348,7 +346,7 @@ io.on('connection', (socket) => {
 
         let gameState = knownGameStates[roomId];
         if (gameState === undefined || !knownGameStates[roomId]) {
-            console.log("CREATING ROOM/TABLE WITH ID:", roomId);
+            console.log(`CREATING ROOM ${roomId}`);
             // once we allow customizing game settings, it'll go here
             knownGameStates[roomId] = initGame(roomId);
             gameState = knownGameStates[roomId];
@@ -563,6 +561,37 @@ io.on('connection', (socket) => {
 
         player.attacking = args.targetPlayerIndex;
         gameState.allMoveHistory += `[P${player.playerIndex}:attack(${args.targetPlayerIndex})]`;
+
+        saveGameState(gameState);
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
+    });
+
+    socket.on("unqueueAttack", (args) => {
+        if (!(args.roomId && args.userUid)) {
+            return
+        }
+        let roomId = args.roomId;
+        let userId = args.userUid;
+        let gameState = knownGameStates[roomId];
+        if (gameState === undefined) {
+            return
+        }
+        let userExists = arrContains(gameState.players, userId);
+
+        if (!userExists && gameState.round === 0) {
+            // Auto-join for now
+            addPlayerToGame(userId, gameState);
+        }
+        player = gameState.players.find((p) => {return p.id == userId});
+
+        if (player == undefined) {
+            return;
+        }
+
+        console.log(`⚔️⚔️⚔️  Player ${player.playerIndex} unattacking Player ${args.targetPlayerIndex} 🛡️🛡️🛡️`);
+
+        player.attacking = "";
+        gameState.allMoveHistory += `[P${player.playerIndex}:cancelattack(${args.targetPlayerIndex})]`;
 
         saveGameState(gameState);
         io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
@@ -995,7 +1024,6 @@ function generateNeighborhood(gameState, playerIndex) {
         let candidateNeighbor = getRandomInt(totalPlayerCount);
         // TODO: fix this indexOf because the visibleNeighborDetails isn't just a number anymore
         if (candidateNeighbor !== playerIndex && neighborhoodIndices.indexOf(candidateNeighbor) == -1) {
-            console.log("CAND NEIGH:", candidateNeighbor);
             newNeighbor = getPlayerByPlayerIndex(gameState, candidateNeighbor);
 
             let visibleNeighborDetails = {playerIndex: newNeighbor.playerIndex, color: newNeighbor.color, nickname: newNeighbor.nickname};

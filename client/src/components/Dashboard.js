@@ -200,16 +200,25 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const queueAttack = async (event, targetPlayerIndex) => {
     if (targetPlayerIndex < 0) return;
 
-    if (event.target.classList.contains("queued")) return;
-
-    socket.emit("queueAttack", {
+    if (event.target.classList.contains("queued")) {
+      socket.emit("unqueueAttack", {
         targetPlayerIndex: targetPlayerIndex,
         createdAt: serverTimestamp(),
         userUid: currentUser.uid,
         roomId: room
       })
 
-    setAttacking(targetPlayerIndex);
+      setAttacking(0);
+    } else {
+      socket.emit("queueAttack", {
+        targetPlayerIndex: targetPlayerIndex,
+        createdAt: serverTimestamp(),
+        userUid: currentUser.uid,
+        roomId: room
+      })
+
+      setAttacking(targetPlayerIndex);
+    }
   };
 
   function calculateVisualCircles(totalCount) {
@@ -262,67 +271,65 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       }
     }
 
+    function depictBattle(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
+      const attackingCircleCount = ((whatsLeft + colorToElementScore(defendTroopColor)) / 100);
 
-  function depictBattle(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
-
-    const attackingCircleCount = ((whatsLeft + colorToElementScore(defendTroopColor)) / 100);
-
-    console.log("ATTACKING:", attackingCircleCount);
-    console.log("TO LOOT:", lifeLooted);
-    if (winnerLeftOrRight === "left") {
-      // Attacker wins and loots
-      // We are the defender
-      animateCircles(attackingCircleCount, attackTroopColor, false); // incoming!
-      setTimeout(() => {
-        spawnAndMoveCircles((lifeLooted / 100), attackTroopColor, true); // looting!
-      }, (attackingCircleCount * 220));
-    } else {
-      spawnAndMoveCircles(attackingCircleCount, 'red', false); // outgoing/attacking
-      setTimeout(() => {
-        animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
-      }, (attackingCircleCount * 220));
+      console.log("ATTACKING:", attackingCircleCount);
+      console.log("TO LOOT:", lifeLooted);
+      if (winnerLeftOrRight === "left") {
+        // Attacker wins and loots
+        // We are the defender
+        animateCircles(attackingCircleCount, attackTroopColor, false); // incoming!
+        setTimeout(() => {
+          spawnAndMoveCircles((lifeLooted / 100), attackTroopColor, true); // looting!
+        }, (attackingCircleCount * 220));
+      } else {
+        spawnAndMoveCircles(attackingCircleCount, 'red', false); // outgoing/attacking
+        setTimeout(() => {
+          animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
+        }, (attackingCircleCount * 220));
+      }
     }
-  }
 
-  function depictAttack(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
-    const attackingCircleCount = (colorToElementScore(attackTroopColor));
-    spawnAndMoveCircles(attackingCircleCount, attackTroopColor, false); // outgoing/attacking
+    function depictAttack(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
+      const attackingCircleCount = (colorToElementScore(attackTroopColor));
+      spawnAndMoveCircles(attackingCircleCount, attackTroopColor, false); // outgoing/attacking
 
-    const circlesToAnimate = calculateVisualCircles(attackingCircleCount);
+      const circlesToAnimate = calculateVisualCircles(attackingCircleCount);
 
-    console.log("ATTACKINGS:", attackingCircleCount, attackTroopColor);
-    if (winnerLeftOrRight === "left") {
-      console.log("LOOTING:", lifeLooted);
-      // Attacker wins and loots
-      // We are the attacker
-      setTimeout(() => {
-        animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
-      }, (circlesToAnimate.count) + 2200);
+      console.log("ATTACKINGS:", attackingCircleCount, attackTroopColor);
+      if (winnerLeftOrRight === "left") {
+        console.log("LOOTING:", lifeLooted);
+        // Attacker wins and loots
+        // We are the attacker
+        setTimeout(() => {
+          animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
+        }, (circlesToAnimate.count) + 2200);
+      }
     }
-  }
 
-  function animateCircles(circleCount, circleColor, isLooting) {
-    const circlesToAnimate = calculateVisualCircles(circleCount);
-    for (let i = 0; i < circlesToAnimate.count; i++) {
-      // Stagger the creation of each circle
-      setTimeout(() => {
-        const { arena, arenaWidth } = getArena();
+    function animateCircles(circleCount, circleColor, isLooting) {
+      const circlesToAnimate = calculateVisualCircles(circleCount);
+      for (let i = 0; i < circlesToAnimate.count; i++) {
+        // Stagger the creation of each circle
+        setTimeout(() => {
+          const { arena, arenaWidth } = getArena();
 
-        const circle = document.createElement('div');
-        circle.className = isLooting ? 'alootcircle' : 'circle';
-        circle.style.backgroundColor = circleColor;
-        circle.style.width = `${circlesToAnimate.radius}px`;
-        circle.style.height = `${circlesToAnimate.radius}px`;
+          const circle = document.createElement('div');
+          circle.className = isLooting ? 'alootcircle' : 'circle';
+          circle.style.backgroundColor = circleColor;
+          circle.style.width = `${circlesToAnimate.radius}px`;
+          circle.style.height = `${circlesToAnimate.radius}px`;
 
-        // Positioning circles along the top edge
-        circle.style.top = '0px';
-        circle.style.left = `${(Math.random() * arenaWidth / 4) + (arenaWidth * 3 / 8)}px`; // Random position along the width in the middle half
+          // Positioning circles along the top edge
+          circle.style.top = '0px';
+          circle.style.left = `${(Math.random() * arenaWidth / 4) + (arenaWidth * 3 / 8)}px`; // Random position along the width in the middle half
 
-        arena.appendChild(circle);
-        moveCircle(circle);
-      }, (i * 100) + ((Math.random() * 52) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
+          arena.appendChild(circle);
+          moveCircle(circle);
+        }, (i * 100) + ((Math.random() * 52) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
+      }
     }
-  }
 
     function moveCircle(circle) {
       const { arenaX, arenaY, centerX, centerY } = getArena();
@@ -574,12 +581,12 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
       /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
       <div className="dashboard-app"> 
-        <div className="header">
+        <div className="header game-over-header">
           <h2 className="mb-1">Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber} (COMPLETE)</h3>
         </div>
         <div className="messages">
-          <h3 className="pl-1">Player: {nickname.length > 0 ? nickname : currentUser.displayName} <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small><div className="active-player-color" color={playerColor}></div><small> {isJoined ? "🟢" : "🔴"}</small></h3>
+          <h3 className="pl-1" title={currentUser.uid}>Player: {nickname.length > 0 ? nickname : currentUser.displayName} {( false && <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>)}{<span className="active-player-color" style={{ backgroundColor: playerColor }}></span>}{false && <small> {isJoined ? "🟢" : "🔴"}</small>}</h3>
             <div className="life-score">
               <h4>Final Life & Elements Score:</h4>
               <div className="life-emoji">🌱</div>
@@ -590,7 +597,8 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               <div>{USDollar.format(finalWinnings)}</div>
               <br />
             </div>
-            <div className="mb-2">
+            <div className="mb-2 mt-14">
+            <h3 className="leaderboard-header">Leaderboard</h3>
             { fullWinningsStats.length > 0 &&
               (fullWinningsStats.map((p) => {
                 return (
@@ -613,9 +621,10 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
         <div className="header pb-2 mb-2">
           <div className="messages">
             <div className="pt-1 pl-6">
-              <div className="top-a1"><span className="pl-1 pr-2">Player:</span> {nickname.length > 0 ? nickname : currentUser.displayName} <small className="tiny" title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>
+              <div className="top-a1"><span className="pl-1 pr-2" title={currentUser.uid}>Player:</span> {nickname.length > 0 ? nickname : currentUser.displayName} {false && <small className="tiny" title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>}
+              <span className="active-player-color"  style={{ backgroundColor: playerColor }}></span>
               <i className="fa fa-sign-out signout-button" title="Log out" onClick={signUserOut}></i>
-              <div className="active-player-color" color={playerColor}></div>
+              
               
               { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
                 <input
@@ -646,7 +655,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               <b>Room:</b> {room}
             </p>
             {(showCopyTooltip && <div className="tooltip">Copied!</div>)}
-            <p><b>Round:</b> {roundNumber}</p>
+            <p><b>Round:</b> {roundNumber} / {roundCount}</p>
             <p><b>Weather:</b> {roundWeather}</p>
           </div>
         </div>
@@ -759,7 +768,20 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             <div className="glowz"></div>
             <canvas id="canvas1"></canvas>
           </div>
-          <div className="neighborhood-buttons centered w-full">
+
+        <div id="battle"></div>
+          {/* disable trollbox for now */
+            false &&
+            <div id="trollbox">
+              {messages.map((message) => (
+                <div key={message.id} className="message">
+                  <span className="user" style={{color: message.color}}>{message.user}:</span> {message.text}
+                </div>
+              ))}
+            </div>
+          }
+        </div>
+        <div className="neighborhood-buttons centered w-full">
               { neighborhood.length > 0 &&
               (
                 <span>Attack:</span>
@@ -777,19 +799,6 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               }
               </div>
             </div>
-
-        <div id="battle"></div>
-          {/* disable trollbox for now */
-            false &&
-            <div id="trollbox">
-              {messages.map((message) => (
-                <div key={message.id} className="message">
-                  <span className="user" style={{color: message.color}}>{message.user}:</span> {message.text}
-                </div>
-              ))}
-            </div>
-          }
-        </div>
         {/* disable trollbox for now */
           false && 
           <form onSubmit={handleSubmit} className="new-message-form">
@@ -806,7 +815,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
           </form>
         }
         { isAutoProceed ?
-          (<div className="w-full timer-button flex justify-center">
+          (<div className="timer-button">
             <div className="w-16">
               <SyncCountdownTimer
                 duration={roundDuration}
@@ -818,9 +827,9 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               />
             </div>
             
-            <div className="w-full"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>
+            {false && <div className="w-full"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>}
           </div>) :
-          (
+          ( false && 
             <div className="timer-button">
               <div className="w-full"><button className="timer-button-holder bigText" onClick={beginAutoProceeding}>⏱️</button></div>
               { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }

@@ -64,7 +64,6 @@ heroku logs --tail
 
 ## TODO
 
-- [ ] Bots
 - [ ] More GameSettings (rules) editability
 - [ ] Tooltip instructions
 - [ ] Better animations
