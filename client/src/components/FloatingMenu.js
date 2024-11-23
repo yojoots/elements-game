@@ -3,7 +3,6 @@ import { Sword } from 'lucide-react';
 
 const FloatingMenu = ({ neighborhood = [], attacking = 0, onAttackClick = () => {} }) => {
   const [isOpen, setIsOpen] = useState(false);
-  
   // Calculate position for each menu item
   const getItemStyle = (index) => {
     const totalItems = neighborhood.length;
@@ -78,7 +77,15 @@ const FloatingMenu = ({ neighborhood = [], attacking = 0, onAttackClick = () => 
             backgroundColor: neighbor.color,
           }}
         >
-          <span title={neighbor.nickname} className="text-xxs font-bold">{neighbor.nickname}</span>
+            { 'netWorth' in neighbor && (<small style={{
+            textAlign: 'center',
+            position: 'relative',
+            top: '-25px',
+            display: 'block',
+            fontSize: 'medium',
+            }}>
+            {Math.round(neighbor.netWorth / 100)}</small>) }
+          <span title={neighbor.nickname} className="text-xxs font-bold" style={{position: 'inherit'}}>{neighbor.nickname}</span>
         </button>
       ))}
 
