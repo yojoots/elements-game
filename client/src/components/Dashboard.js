@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import AnimatedBattleStats from "./AnimatedBattleStats";
 import GameSettings from "./GameSettings";
+import FloatingMenu from "./FloatingMenu";
+import Hexagon from "./Hexagon";
 import { Draggable } from "../lib";
 import { serverTimestamp } from "firebase/firestore";
 import { SyncCountdownTimer } from "./SyncCountdownTimer";
@@ -197,10 +199,10 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       })
   };
 
-  const queueAttack = async (event, targetPlayerIndex) => {
+  const queueAttack = async (targetPlayerIndex) => {
     if (targetPlayerIndex < 0) return;
 
-    if (event.target.classList.contains("queued")) {
+    if (attacking === targetPlayerIndex) {
       socket.emit("unqueueAttack", {
         targetPlayerIndex: targetPlayerIndex,
         createdAt: serverTimestamp(),
@@ -586,7 +588,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
           <h3>Round: {roundNumber} (COMPLETE)</h3>
         </div>
         <div className="messages">
-          <h3 className="pl-1" title={currentUser.uid}>Player: {nickname.length > 0 ? nickname : currentUser.displayName} {( false && <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>)}{<span className="active-player-color" style={{ backgroundColor: playerColor }}></span>}{false && <small> {isJoined ? "🟢" : "🔴"}</small>}</h3>
+          <h3 className="pl-1 text-center" title={currentUser.uid}>Player: {nickname.length > 0 ? nickname : currentUser.displayName} {( false && <small title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>)}{<span className="active-player-color" style={{ backgroundColor: playerColor }}></span>}{false && <small> {isJoined ? "🟢" : "🔴"}</small>}</h3>
             <div className="life-score">
               <h4>Final Life & Elements Score:</h4>
               <div className="life-emoji">🌱</div>
@@ -781,24 +783,26 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             </div>
           }
         </div>
-        <div className="neighborhood-buttons centered w-full">
+            {false && 
+            <div className="neighborhood-buttons centered">
               { neighborhood.length > 0 &&
               (
-                <span>Attack:</span>
+                <span className="attack-span">Attack</span>
               )}
               <div className="player-buttons">
               { neighborhood.length > 0 &&
                 (neighborhood.map((neighbor) => {
                   return (
-                    <div key={neighbor.playerIndex} onClick={(e) => queueAttack(e, neighbor.playerIndex)} className={attacking === neighbor.playerIndex ? "flex-item queued" : "flex-item attackable"} style={{backgroundColor: neighbor.color}}>
+                    <Hexagon key={neighbor.playerIndex} color={neighbor.color} onClick={(e) => queueAttack(e, neighbor.playerIndex)} className={attacking === neighbor.playerIndex ? "flex-item attackable queued" : "flex-item attackable"} >
                       {neighbor.nickname}
                       { 'netWorth' in neighbor && (<small>&nbsp;({Math.round(neighbor.netWorth / 100)})</small>) }
-                    </div>
+                    </Hexagon>
                   );
                 }))
               }
               </div>
             </div>
+            }
         {/* disable trollbox for now */
           false && 
           <form onSubmit={handleSubmit} className="new-message-form">
@@ -827,14 +831,21 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               />
             </div>
             
-            {false && <div className="w-full"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>}
+            {true && <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>}
           </div>) :
-          ( false && 
+          ( true && 
             <div className="timer-button">
-              <div className="w-full"><button className="timer-button-holder bigText" onClick={beginAutoProceeding}>⏱️</button></div>
+              <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={beginAutoProceeding}>⏱️</button></div>
               { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
             </div>
           )
+        }
+        {roundNumber > 0 &&
+          <FloatingMenu 
+            neighborhood={neighborhood}
+            attacking={attacking}
+            onAttackClick={(playerIndex) => queueAttack(playerIndex)}
+          />
         }
       </div>
     </>

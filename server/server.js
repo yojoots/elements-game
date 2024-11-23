@@ -103,7 +103,7 @@ const initGame = (roomId) => {
         fileContents = fs.readFileSync(`./games/${roomId}.txt`);
         let gameState = JSON.parse(fileContents);
         if (gameState.round <= gameState.roundCount) {
-            console.log("RETURNING OLD GAME:", gameState);
+            console.log(`Loaded: ${gameState.roomId} (round ${gameState.round}) (players ${gameState.numPlayers})`);
             return gameState;
         } else {
             let randomSuffix = getRandomString(10);
@@ -832,7 +832,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Disconnected from socket");
+        console.debug("Disconnected from socket");
     });
 });
 

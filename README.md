@@ -64,6 +64,10 @@ heroku logs --tail
 
 ## TODO
 
-- [ ] More GameSettings (rules) editability
+- [ ] More GameSettings
+    - Market variance
+    - Attack friction
+    - Life growth rate
+    - Scry: full vs combined
 - [ ] Tooltip instructions
-- [ ] Better animations
+- [ ] Proper attack emissions and depictions

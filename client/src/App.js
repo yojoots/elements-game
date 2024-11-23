@@ -106,9 +106,10 @@ function ElementsApp() {
     <AppWrapper isAuth={isAuth} setIsAuth={setIsAuth} setIsInChat={setIsInChat}>
       {!isInChat ? (
         <div className="room">
-          <label> Game ID: </label>
+          <label class="text-white"> Game ID: </label>
           <input
             value={room}
+            placeholder="(leave blank to auto-generate)"
             onKeyDown={(e) => { if (e.key === 'Enter') { tryToJoin() }}}
             onChange={(e) => { setRoom(e.target.value); }}
           />

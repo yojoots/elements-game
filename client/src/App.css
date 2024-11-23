@@ -3,10 +3,12 @@
 @tailwind utilities;
 
 body {
-  padding: 0;
-  margin: 0;
-  height: 100vh; /* Ensure body takes full viewport height */
-  overflow: hidden; /* Prevent scrolling */
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  background: #090f17ed;
+  background-image: linear-gradient(332deg, rgb(3, 48, 9) 0%, rgb(36, 25, 10) 31.25%, rgb(0, 9, 42) 100%);
+
 }
 
 .App {
@@ -68,11 +70,11 @@ h2 {
 .room label {
   text-align: center;
   font-size: 25px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .room input {
-  width: 200px;
+  width: 160px;
   height: 30px;
   border: 2px solid #3b5998;
   border-radius: 6px;
@@ -80,10 +82,17 @@ h2 {
   font-size: 20px;
   text-align: center;
   margin: 5px;
+  margin-bottom: 10px;
+}
+
+.room input::placeholder {
+  font-size: 10px;
+  position: relative;
+  top: -0.5em;
 }
 
 .auth-button {
-  width: 210px;
+  width: 160px;
   height: 40px;
   border: none;
   border-radius: 6px;
@@ -92,6 +101,7 @@ h2 {
   text-align: center;
   margin: 5px;
   background-color: #000e2c;
+  background-color: #361b9be6;
   color: white;
   cursor: pointer;
 }
