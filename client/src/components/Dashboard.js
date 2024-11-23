@@ -833,7 +833,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             
             {true && <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>}
           </div>) :
-          ( true && 
+          ( false &&
             <div className="timer-button">
               <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={beginAutoProceeding}>⏱️</button></div>
               { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
