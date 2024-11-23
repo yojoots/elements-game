@@ -15,6 +15,8 @@
   color: #ecfff6;
   width: inherit;
   height: inherit;
+  overflow: scroll;
+  padding-bottom: 80px;
 }
 
 /* Minor responsiveness for now */
