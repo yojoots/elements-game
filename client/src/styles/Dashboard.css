@@ -247,7 +247,7 @@
   /* width: 300px; /* Set your desired dimensions */
   /* height: 300px; */
   /* border: 1px solid black; */
-  overflow: hidden; /* Keeps circles within the arena */
+  /* overflow: hidden; Keeps circles within the arena */
 }
 
 .circle {
@@ -474,6 +474,12 @@ h4 {
   margin-left: 10px;
   margin-bottom: 1px;
   border-radius: 50%;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.z-100 {
+  z-index: 100;
 }
 
 .text-center {
@@ -897,13 +903,15 @@ text-align: center;
   border-radius: 50%;
   width: 100px;
   height: 100%;
-  z-index: 1;
 }
 
-.middleColumn div:nth-child(2) {
-  margin-bottom: 110px;
+.middleColumn div:nth-child(3) {
+  margin-top: 115px;
 }
 
+.overflow-y-visible {
+  overflow-y: visible;
+}
 
 
 .btn-4 {

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import AnimatedBattleStats from "./AnimatedBattleStats";
 import GameSettings from "./GameSettings";
 import FloatingMenu from "./FloatingMenu";
+import InlineNicknameEditor from './InlineNicknameEditor';
+import { TooltipProvider, InfoBubble, ForceVisibleWhen } from './TooltipSystem';
 import Hexagon from "./Hexagon";
 import { Draggable } from "../lib";
 import { serverTimestamp } from "firebase/firestore";
@@ -185,18 +187,20 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
 
   const handleNicknameChange = async (event) => {
     event.preventDefault();
-
-    if (nicknameInput === "") return;
+    
+    // Get the nickname value from the form's input element
+    const newNickname = event.target[0].value;
+    
+    if (newNickname === "") return;
 
     socket.emit("updateNickname", {
-        nickname: nicknameInput,
+        nickname: newNickname,
         createdAt: serverTimestamp(),
         userUid: currentUser.uid,
         userName: currentUser.displayName,
         roomId: room,
-        //fullUser: auth.currentUser,
         room,
-      })
+    })
   };
 
   const queueAttack = async (targetPlayerIndex) => {
@@ -582,7 +586,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
       /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
       /* ! GAME IS OVER GAME IS OVER GAME IS OVER */
-      <div className="dashboard-app"> 
+      <div className="dashboard-app">
         <div className="header game-over-header">
           <h2 className="mb-1">Game: {room || "Game"}</h2>
           <h3>Round: {roundNumber} (COMPLETE)</h3>
@@ -618,27 +622,23 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   }
 
   return (
-    <>
+    <TooltipProvider>
       <div className="dashboard-app">
         <div className="header pb-2 mb-2">
           <div className="messages">
             <div className="pt-1 pl-6">
-              <div className="top-a1"><span className="pl-1 pr-2" title={currentUser.uid}>Player:</span> {nickname.length > 0 ? nickname : currentUser.displayName} {false && <small className="tiny" title={currentUser.uid}>({currentUser.uid.slice(0,4) + "..." + currentUser.uid.slice(-5,-1)})</small>}
-              <span className="active-player-color"  style={{ backgroundColor: playerColor }}></span>
-              <i className="fa fa-sign-out signout-button" title="Log out" onClick={signUserOut}></i>
-              
-              
-              { roundNumber <= 0 && (<form onSubmit={handleNicknameChange} className="new-nickname">
-                <input
-                  type="text"
-                  value={nicknameInput}
-                  onChange={(event) => setNicknameInput(event.target.value)}
-                  className="new-nickname-input"
-                  placeholder="Edit nickname"
-                />
-                <button type="submit" className="nickname-button">⤴</button>
-              </form> ) }
-              </div>
+            <div className="top-a1 flex font-semibold	z-100">
+              {false && <span className="active-player-color" style={{ backgroundColor: playerColor }}></span>}
+              <span className="pl-0 pr-2" title={currentUser.uid}>Player:</span>
+              <InlineNicknameEditor
+                currentNickname={nickname}
+                onSubmit={handleNicknameChange}
+                displayName={currentUser.displayName}
+                roundNumber={roundNumber}
+                color={ playerColor }
+              />
+              <i className="fa fa-sign-out signout-button my-auto" title="Log out" onClick={signUserOut}></i>
+            </div>
             </div>
 
             <div className="attack-and-defense js-explosion">
@@ -681,30 +681,41 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
         )}
         <div className="mainbuttons">
           <div id="arena" className="arena">
-          <div className="container">
-            <AnimatedBattleStats
-              lifeScore={lifeScore}
-              airScore={airScore}
-              earthScore={earthScore}
-              fireScore={fireScore}
-              waterScore={waterScore}
-              airPrice={airPrice}
-              earthPrice={earthPrice}
-              firePrice={firePrice}
-              waterPrice={waterPrice}
-              elementOrder={elementOrder}
-              onConvertLifeTo={convertLifeTo}
-            />
+          <div className="container relative overflow-y-visible">
+            <div className="relative">
+              <AnimatedBattleStats
+                lifeScore={lifeScore}
+                airScore={airScore}
+                earthScore={earthScore}
+                fireScore={fireScore}
+                waterScore={waterScore}
+                airPrice={airPrice}
+                earthPrice={earthPrice}
+                firePrice={firePrice}
+                waterPrice={waterPrice}
+                elementOrder={elementOrder}
+                onConvertLifeTo={convertLifeTo}
+              />
+              <InfoBubble className="absolute -right-0 top-1/2 transform" tooltipStyle={{top: "90px", right: "0px"}}>
+                Convert life force into elements. Each element has a dynamic price which will fluctuate each round.
+              </InfoBubble>
+            </div>
             {/* <div className="lifeInCenter btn-4 anyElement">
                 <span>🌱</span>
                 <div><strong>{Math.round(lifeScore / 100)}</strong></div>
               </div> */}
-              <div className="middleColumn" title={elementOrder}>
+              <div className="middleColumn relative" title={elementOrder}>
+                <InfoBubble className="absolute -right-64 top-0" direction="right" tooltipStyle={{top: '445px', right: '115px', width: '200px'}}>
+                  Drag (or long-press) to reorder elements. The order determines battle advantages!
+                </InfoBubble>
+                <InfoBubble className="absolute -right-64 top-0" direction="right" tooltipStyle={{top: '200px', right: '115px', width: '200px'}}>
+                  This is your life score. Life automatically grows each round, and can be converted into elements. Successful attacks will loot other players' life.
+                </InfoBubble>
                 <Draggable onPosChangeTwo={reorderElements}>
                   <div id="airOrderDiv" data-elch={"a"} className="anyElement"><span>💨</span></div>
                   <div id="earthOrderDiv" data-elch={"e"} className="anyElement"><span>⛰️</span></div>
                   <div id="fireOrderDiv" data-elch={"f"} className="anyElement"><span>🔥</span></div>
-                  <div id="fireOrderDiv" data-elch={"w"}  className="anyElement"><span>💧</span></div>
+                  <div id="waterOrderDiv" data-elch={"w"}  className="anyElement"><span>💧</span></div>
                 </Draggable>
                 {/* <PrettyDraggableList items={'🔥 ⛰️ 💧 💨'.split(' ')} /> */}
               </div>
@@ -725,12 +736,17 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 }
               </div>
               <div className="scry element-buttons">
-                { airScore > 0 && fireScore > 0 && waterScore > 0 &&
-                  <div>
-                    <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
-                    <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>Scry</div>
+              <ForceVisibleWhen when={airScore > 0 && fireScore > 0 && waterScore > 0}>
+                <div>
+                  <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
+                  <InfoBubble className="absolute -left-64 top-0" direction="left" tooltipStyle={{top: "-10px", left: "100px", width: '160px'}}>
+                      Cast spells by combining the elements you have. Costs 3 elements per spell.
+                    </InfoBubble>
+                  <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>
+                    Scry
                   </div>
-                }
+                </div>
+              </ForceVisibleWhen>
               </div>
               <div className="seed element-buttons">
                 { airScore > 0 && earthScore > 0 && waterScore > 0 &&
@@ -840,14 +856,21 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             </div>
           )
         }
-        {roundNumber > 0 &&
-          <FloatingMenu 
-            neighborhood={neighborhood}
-            attacking={attacking}
-            onAttackClick={(playerIndex) => queueAttack(playerIndex)}
-          />
-        }
+
+      <div className="absolute">
+        <ForceVisibleWhen when={roundNumber > 0}>
+            <FloatingMenu 
+              neighborhood={neighborhood}
+              attacking={attacking}
+              onAttackClick={(playerIndex) => queueAttack(playerIndex)}
+            />
+
+        </ForceVisibleWhen>
       </div>
-    </>
+      <InfoBubble className="absolute " direction="right" tooltipStyle={{bottom: "15px", right: "105px", width: '160px'}}>
+          Attack neighboring players using this menu during the game.
+        </InfoBubble>
+      </div>
+    </TooltipProvider>
   );
 };

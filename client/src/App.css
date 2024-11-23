@@ -90,6 +90,26 @@ h2 {
   top: -0.5em;
 }
 
+.nickname-input {
+  width: 160px;
+  height: 30px;
+  border: 2px solid #3b5998;
+  color: black;
+  border-radius: 6px;
+  padding-left: 5px;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin: 5px;
+  margin-bottom: 10px;
+}
+
+.nickname-input::placeholder {
+  font-size: 10px;
+  position: relative;
+  top: -0.5em;
+}
+
 .auth-button {
   width: 160px;
   height: 40px;
