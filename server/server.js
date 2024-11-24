@@ -262,6 +262,17 @@ function processBotActions(gameState, bot) {
     }
 }
 
+function getPublicPlayerInfo(player) {
+    // Only return non-sensitive information
+    return {
+        id: player.id,
+        nickname: player.nickname,
+        color: player.color,
+        playerIndex: player.playerIndex,
+        isBot: player.isBot
+    };
+}
+
 let knownGameStates = {}
 
 function addPlayerToGame(userId, gameState) {
@@ -280,7 +291,7 @@ function addPlayerToGame(userId, gameState) {
     console.log(`User ${userId} joining game ${gameState.roomId}`);
     let newPlayer = initPlayer(userId, gameState.players.length + 1);
     gameState.players.push(newPlayer);
-    io.to(userId).emit('playerState', {room: gameState.roomId, user: userId, playerState: newPlayer});
+    io.to(userId).emit('playerState', {room: gameState.roomId, user: userId, playerState: newPlayer, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
     io.to(gameState.roomId).emit('newRound', {
         round: gameState.round,
         weather: gameState.weather,
@@ -368,7 +379,7 @@ io.on('connection', (socket) => {
             roundDuration: gameState.roundDuration
         });
 
-        io.to(userUid).emit('playerState', {room: roomId, user: userUid, playerState: player});
+        io.to(userUid).emit('playerState', {room: roomId, user: userUid, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
         io.to(roomId).emit('newRound', {
             round: gameState.round,
             weather: gameState.weather,
@@ -532,7 +543,7 @@ io.on('connection', (socket) => {
         player.nickname = args.nickname;
 
         saveGameState(gameState);
-        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
     });
 
     socket.on("queueAttack", (args) => {
@@ -563,7 +574,7 @@ io.on('connection', (socket) => {
         gameState.allMoveHistory += `[P${player.playerIndex}:attack(${args.targetPlayerIndex})]`;
 
         saveGameState(gameState);
-        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
     });
 
     socket.on("unqueueAttack", (args) => {
@@ -594,7 +605,7 @@ io.on('connection', (socket) => {
         gameState.allMoveHistory += `[P${player.playerIndex}:cancelattack(${args.targetPlayerIndex})]`;
 
         saveGameState(gameState);
-        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
     });
 
     socket.on("updateOrder", (args) => {
@@ -636,7 +647,7 @@ io.on('connection', (socket) => {
         gameState.allMoveHistory += `[P${player.playerIndex}:reorder(${args.order})]`;
 
         saveGameState(gameState);
-        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
     });
 
     socket.on("convert", (args) => {
@@ -684,7 +695,7 @@ io.on('connection', (socket) => {
         gameState.allMoveHistory += `[P${player.playerIndex}:convert(${args.element})]`;
 
         saveGameState(gameState);
-        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player});
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
     });
 
     socket.on("castSpell", (args) => {
@@ -766,7 +777,7 @@ io.on('connection', (socket) => {
         gameState.allMoveHistory += `[P${player.playerIndex}:spell(${args.spell})]`;
 
         saveGameState(gameState);
-        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player})
+        io.to(userId).emit('playerState', {room: roomId, user: userId, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
     });
 
     socket.on("startRoundTimer", (args) => {
@@ -1145,7 +1156,8 @@ function processRoundAndProceed(roomId) {
         player.isScrying = false;
         generateNeighborhood(gameState, player.playerIndex);
         if (!player.isBot) {
-            io.to(player.id).emit('playerState', {room: roomId, user: player.id, playerState: player});
+            io.to(player.id).emit('playerState', {room: roomId, user: player.id, playerState: player,
+                allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
         }
     }
 

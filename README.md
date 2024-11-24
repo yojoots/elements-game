@@ -69,5 +69,4 @@ heroku logs --tail
     - Attack friction
     - Life growth rate
     - Scry: full vs combined
-- [ ] Tooltip instructions
 - [ ] Proper attack emissions and depictions

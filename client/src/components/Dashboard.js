@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import AnimatedBattleStats from "./AnimatedBattleStats";
 import GameSettings from "./GameSettings";
 import FloatingMenu from "./FloatingMenu";
+import JoinedPlayersList from "./JoinedPlayersList";
 import InlineNicknameEditor from './InlineNicknameEditor';
 import { TooltipProvider, InfoBubble, ForceVisibleWhen } from './TooltipSystem';
 import Hexagon from "./Hexagon";
@@ -57,6 +58,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [isFirstPlayer, setIsFirstPlayer] = useState(false);
   const [gameSettings, setGameSettings] = useState(null);
   const [showSettings, setShowSettings] = useState(true);
+  const [allPlayers, setAllPlayers] = useState([]);
 
   useEffect(() => {
     alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes
@@ -452,6 +454,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
         setAttacking(value.playerState.attacking);
         setLastSpellCastInRound(value.playerState.lastSpellCastInRound);
         setPlayerColor(value.playerState.color)
+        setAllPlayers(value.allPlayers);
       }
     }
 
@@ -661,13 +664,19 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
           </div>
         </div>
         {showSettings && roundNumber === 0 && (
-          <GameSettings
-            socket={socket}
-            room={room}
-            userUid={currentUser.uid}
-            isFirstPlayer={isFirstPlayer}
-            currentSettings={gameSettings}
-            setShowSettings={setShowSettings}
+            <GameSettings
+              socket={socket}
+              room={room}
+              userUid={currentUser.uid}
+              isFirstPlayer={isFirstPlayer}
+              currentSettings={gameSettings}
+              setShowSettings={setShowSettings}
+            />
+        )}
+        {roundNumber === 0 && (
+          <JoinedPlayersList 
+            players={allPlayers} 
+            currentUserId={currentUser.uid}
           />
         )}
         {!showSettings && roundNumber === 0 && (
