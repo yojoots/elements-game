@@ -68,5 +68,6 @@ heroku logs --tail
     - Market variance
     - Attack friction
     - Life growth rate
+    - Bot behavior
     - Scry: full vs combined
 - [ ] Proper attack emissions and depictions

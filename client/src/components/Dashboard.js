@@ -880,14 +880,13 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 attacking={attacking}
                 onAttackClick={(playerIndex) => queueAttack(playerIndex)}
               />
-
           </ForceVisibleWhen>
+          <InfoBubble direction="lowright" tooltipStyle={{position: "fixed", bottom: "25px", right: "105px", width: '160px'}}>
+              <b className="small-caps">Attack</b>
+              <br />
+              Use this menu during the game to attack neighboring players with your elements.
+          </InfoBubble>
         </div>
-        <InfoBubble className="fixed " direction="lowright" tooltipStyle={{bottom: "25px", right: "105px", width: '160px'}}>
-            <b className="small-caps">Attack</b>
-            <br />
-            Use this menu during the game to attack neighboring players with your elements.
-        </InfoBubble>
       </div>
     </TooltipProvider>
   );
