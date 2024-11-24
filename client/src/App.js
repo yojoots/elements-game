@@ -7,7 +7,8 @@ import Cookies from "universal-cookie";
 import "./App.css";
 import io from 'socket.io-client';
 import { auth } from "./firebase-config";
-import { onAuthStateChanged, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
+import { setPersistence, browserLocalPersistence } from "firebase/auth";
 import 'font-awesome/css/font-awesome.min.css';
 
 const cookies = new Cookies();
@@ -33,9 +34,7 @@ function ElementsApp() {
 
     // Check if there's a path-based room ID (e.g., /EXAMPLE)
     const pathSegments = window.location.pathname.split('/');
-    const pathRoom = pathSegments[1]; // Get the first segment after the '/'
-
-    // Return the room ID from either source, prioritizing path-based
+    const pathRoom = pathSegments[1];
     return pathRoom || queryParamRoom || "";
   };
 
@@ -43,30 +42,16 @@ function ElementsApp() {
   const [isInChat, setIsInChat] = useState(!!getRoomFromUrl());
 
   useEffect(() => {
-    // First, check for stored auth token
-    const authToken = cookies.get("auth-token");
-
-    // If we have a token but aren't authenticated, try to restore the session
-    if (authToken && !isAuth) {
-      // Create a credential from the stored token
-      const credential = GoogleAuthProvider.credential(null, authToken);
-
-      // Attempt to sign in with the stored credential
-      signInWithCredential(auth, credential)
-        .catch((error) => {
-          console.error("Error restoring auth session:", error);
-          // If token is invalid, clear it
-          cookies.remove("auth-token");
-          setIsAuth(false);
-          setLoading(false);
-        });
-    }
+    // Set persistence to LOCAL at startup
+    setPersistence(auth, browserLocalPersistence).catch((error) => {
+      console.error("Error setting persistence:", error);
+    });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is signed in
         setIsAuth(true);
-        // Update the cookie with the latest token
+        // Store minimal required auth data in cookie for server-side checks
         cookies.set("auth-token", user.refreshToken, {
           path: '/',
           sameSite: 'strict',
@@ -96,18 +81,17 @@ function ElementsApp() {
       unsubscribe();
       window.removeEventListener('popstate', handleLocationChange);
     };
-  }, [isAuth]);
+  }, []);
 
   if (loading) {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
-        <div className="text-white">Loading...</div>
+        <div>Loading...</div>
       </div>
     );
   }
 
-  // Rest of the component remains the same...
   if (!isAuth) {
     return (
       <AppWrapper

@@ -18,7 +18,6 @@ const cookies = new Cookies();
 export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [nicknameInput, setNicknameInput] = useState("");
   const [nickname, setNickname] = useState("Nickname");
   const [roundDuration, setRoundDuration] = useState(20);
   const [roundNumber, setRoundNumber] = useState(0);

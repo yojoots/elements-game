@@ -1114,7 +1114,6 @@ function processRoundAndProceed(roomId) {
 
                 let timeString = new Date().getTime().toString();
                 let battleResultsHash = helpers.hashCode(JSON.stringify(battleResults) + timeString);
-                //io.to(roomId).emit('newMessage', {room: roomId, text: JSON.stringify(battleResults), user: "SYSTEM", color: "BLACK", id: battleResultsHash, key: battleResultsHash});
                 console.log('Emitting battleResults:', battleResultsHash);
 
                 io.to(defendingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, attackTroopColor: battleResults.attackTroopColor, defendTroopColor: battleResults.defendTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
@@ -1148,6 +1147,32 @@ function processRoundAndProceed(roomId) {
         if (!player.isBot) {
             io.to(player.id).emit('playerState', {room: roomId, user: player.id, playerState: player});
         }
+    }
+
+    // Check if only one player has life remaining
+    const playersWithLife = gameState.players.filter(player => player.life > 0);
+    if (playersWithLife.length === 1) {
+        // We have a winner! End the game and allocate all winnings to the winner
+        const winner = playersWithLife[0];
+        console.log(`Game ${roomId} complete; Player ${winner.nickname} wins by elimination!`);
+        gameState.isTicking = false;
+        
+        // Set market prices to default
+        gameState.airPrice = 0.25;
+        gameState.earthPrice = 0.25;
+        gameState.firePrice = 0.25;
+        gameState.waterPrice = 0.25;
+        
+        // Allocate all winnings to the winner
+        const totalPot = gameState.ante * gameState.players.length;
+        gameState.players.forEach(player => {
+            player.winnings = player.id === winner.id ? totalPot : 0;
+        });
+        
+        gameState.allMoveHistory += `[S:exterminator(${winner.playerIndex})]`;
+        saveGameState(gameState);
+        io.to(roomId).emit('gameResults', gameState);
+        return;
     }
 
     gameState.weather = generateWeather();

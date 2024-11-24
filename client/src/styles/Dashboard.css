@@ -22,6 +22,41 @@
   top: 20px;
 }
 
+.mainbuttons {
+  height: auto;
+  max-height: calc(100vh - 120px); /* Adjust 120px based on your header height */
+  max-height: calc(100dvh - 120px);
+  /* Prevent text selection */
+  -webkit-user-select: none;  /* Safari */
+  -moz-user-select: none;     /* Firefox */
+  -ms-user-select: none;      /* IE10+/Edge */
+  user-select: none;          /* Standard */
+  
+  /* Prevent touch callouts/context menus on mobile */
+  -webkit-touch-callout: none;
+  
+  /* Prevent drag operations */
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* Add height check media query */
+@media screen and (min-height: 800px) {
+  .dashboard-app {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .mainbuttons {
+    overflow: hidden;
+  }
+}
+
 .text-xxs {
   font-size: 8px;
 }
