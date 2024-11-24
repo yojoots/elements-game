@@ -704,7 +704,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 elementOrder={elementOrder}
                 onConvertLifeTo={convertLifeTo}
               />
-              <InfoBubble className="absolute -right-0 top-1/2 transform" direction="downright" tooltipStyle={{top: "65px", right: "25px"}}>
+              <InfoBubble className="absolute -right-0 top-1/2 transform" direction="downright" tooltipStyle={{top: "65px", right: "50px"}}>
                 <b className="small-caps">Elements Battle For Life</b>
                 <br />
                 Convert life force into elements. Each element has a dynamic price which will fluctuate each round.

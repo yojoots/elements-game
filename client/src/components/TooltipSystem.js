@@ -59,7 +59,7 @@ export const InfoBubble = ({ children, className = "", direction = "down", toolt
     left: "-left-2 top-1/2 transform -translate-y-1/2",
     right: "-right-2 top-1/2 transform -translate-y-1/2",
     lowright: "-right-2 top-1/2 transform mt-6",
-    downright: "-bottom-2 left-1/2 transform -translate-x-1/2 ml-6",
+    downright: "-bottom-2 left-1/2 transform -translate-x-1/2 ml-12",
     upperleft: "-top-2 right-1/2 transform mr-6",
   };
 
