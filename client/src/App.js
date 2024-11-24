@@ -7,7 +7,7 @@ import Cookies from "universal-cookie";
 import "./App.css";
 import io from 'socket.io-client';
 import { auth } from "./firebase-config";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
 import 'font-awesome/css/font-awesome.min.css';
 
 const cookies = new Cookies();
@@ -33,7 +33,7 @@ function ElementsApp() {
 
     // Check if there's a path-based room ID (e.g., /EXAMPLE)
     const pathSegments = window.location.pathname.split('/');
-    const pathRoom = pathSegments[1]; // Get the first segment after the /
+    const pathRoom = pathSegments[1]; // Get the first segment after the '/'
 
     // Return the room ID from either source, prioritizing path-based
     return pathRoom || queryParamRoom || "";
@@ -43,11 +43,36 @@ function ElementsApp() {
   const [isInChat, setIsInChat] = useState(!!getRoomFromUrl());
 
   useEffect(() => {
+    // First, check for stored auth token
+    const authToken = cookies.get("auth-token");
+
+    // If we have a token but aren't authenticated, try to restore the session
+    if (authToken && !isAuth) {
+      // Create a credential from the stored token
+      const credential = GoogleAuthProvider.credential(null, authToken);
+
+      // Attempt to sign in with the stored credential
+      signInWithCredential(auth, credential)
+        .catch((error) => {
+          console.error("Error restoring auth session:", error);
+          // If token is invalid, clear it
+          cookies.remove("auth-token");
+          setIsAuth(false);
+          setLoading(false);
+        });
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         // User is signed in
         setIsAuth(true);
-        cookies.set("auth-token", user.refreshToken);
+        // Update the cookie with the latest token
+        cookies.set("auth-token", user.refreshToken, {
+          path: '/',
+          sameSite: 'strict',
+          secure: window.location.protocol === 'https:',
+          maxAge: 3600 * 24 * 30 // 30 days
+        });
       } else {
         // User is signed out
         setIsAuth(false);
@@ -71,12 +96,18 @@ function ElementsApp() {
       unsubscribe();
       window.removeEventListener('popstate', handleLocationChange);
     };
-  }, []);
+  }, [isAuth]);
 
   if (loading) {
-    return <div>Loading...</div>; // Or your preferred loading indicator
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <div className="text-white">Loading...</div>
+      </div>
+    );
   }
 
+  // Rest of the component remains the same...
   if (!isAuth) {
     return (
       <AppWrapper
