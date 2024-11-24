@@ -696,7 +696,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 elementOrder={elementOrder}
                 onConvertLifeTo={convertLifeTo}
               />
-              <InfoBubble className="absolute -right-0 top-1/2 transform" tooltipStyle={{top: "65px", right: "2px"}}>
+              <InfoBubble className="absolute -right-0 top-1/2 transform" direction="downright" tooltipStyle={{top: "65px", right: "25px"}}>
                 <b className="small-caps">Elements Battle For Life</b>
                 <br />
                 Convert life force into elements. Each element has a dynamic price which will fluctuate each round.
@@ -745,7 +745,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
               <ForceVisibleWhen when={airScore > 0 && fireScore > 0 && waterScore > 0}>
                 <div>
                   <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
-                  <InfoBubble className="absolute -left-64 top-0" direction="left" tooltipStyle={{top: "0px", left: "100px", width: '170px'}}>
+                  <InfoBubble className="absolute top-0" direction="upperleft" tooltipStyle={{top: "115px", left: "-2px", width: '170px'}}>
                     <b className="small-caps">Spells Cost Elements</b>
                     <br />
                     Combine 3 elements to cast a spell 1x per round.<br />

@@ -20,7 +20,7 @@ export const AppWrapper = ({ children, isAuth, setIsAuth, setIsInChat }) => {
           <button title="Sign Out" className="auth-button signout-button" onClick={signUserOut}>⏻</button>
         </div>
       )}
-      <div className="w-full flex-grow">{children}</div>
+      <div className="w-full flex-grow ox-inherit">{children}</div>
     </div>
   );
 };

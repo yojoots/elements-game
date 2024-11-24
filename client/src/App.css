@@ -185,3 +185,7 @@ h2 {
 .cursor-copy {
   cursor: copy;
 }
+
+.ox-inherit {
+  overflow-x: inherit;
+}

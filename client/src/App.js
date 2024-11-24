@@ -106,7 +106,7 @@ function ElementsApp() {
     <AppWrapper isAuth={isAuth} setIsAuth={setIsAuth} setIsInChat={setIsInChat}>
       {!isInChat ? (
         <div className="room">
-          <label class="text-white"> Game ID: </label>
+          <label className="text-white"> Game ID: </label>
           <input
             value={room}
             placeholder="(leave blank to auto-generate)"

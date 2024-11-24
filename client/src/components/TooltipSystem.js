@@ -20,7 +20,7 @@ export const TooltipProvider = ({ children }) => {
 
       {/* Dark Overlay */}
       {isShowingHelp && (
-        <div className="fixed inset-0 bg-black/60 z-40" />
+        <div className="fixed inset-0 bg-black/60 z-3" />
       )}
 
       {children}
@@ -59,6 +59,8 @@ export const InfoBubble = ({ children, className = "", direction = "down", toolt
     left: "-left-2 top-1/2 transform -translate-y-1/2",
     right: "-right-2 top-1/2 transform -translate-y-1/2",
     lowright: "-right-2 top-1/2 transform mt-6",
+    downright: "-bottom-2 left-1/2 transform -translate-x-1/2 ml-6",
+    upperleft: "-top-2 right-1/2 transform mr-6",
   };
 
   const triangleRotation = {
@@ -66,7 +68,9 @@ export const InfoBubble = ({ children, className = "", direction = "down", toolt
     up: "-rotate-45",
     left: "-rotate-45",
     right: "rotate-45",
-    lowright: "rotate-45"
+    lowright: "rotate-45",
+    downright: "rotate-45",
+    upperleft: "-rotate-45"
   };
 
   return (
