@@ -27,7 +27,7 @@ export const TooltipProvider = ({ children, round = 0 }) => {
         
         {/* Instruction Prompt */}
         {!hasSeenHelp && round == 0 && (
-            <h3 class="rainbow rainbow_text_animated"> <span style={{fontSize: '20px'}}>←</span> <span style={{verticalAlign: 'top'}}>Instructions</span></h3>
+            <h3 className="rainbow rainbow_text_animated"> <span style={{fontSize: '20px'}}>←</span> <span style={{verticalAlign: 'top'}}>Instructions</span></h3>
         )}
       </div>
 

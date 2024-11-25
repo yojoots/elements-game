@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 
-const AnimatedCounter = ({ value, duration = 1000, delay = 0 }) => {
+const AnimatedCounter = ({ value, duration = 100, delay = 0 }) => {
   const spring = useSpring({
     from: { val: value },
     to: { val: value },
@@ -81,15 +81,15 @@ const AnimatedBattleStats = ({
           // Immediate update for conversions
           setDisplayedLifeScore(lifeScore);
           setAnimating(prev => ({ ...prev, life: true }));
-          setTimeout(() => setAnimating(prev => ({ ...prev, life: false })), 300);
+          setTimeout(() => setAnimating(prev => ({ ...prev, life: false })), 100);
         } else {
           // For battles, sync with looting circles
-          const BATTLE_ANIMATION_DURATION = 2200; // Match with your circle animation duration
+          const BATTLE_ANIMATION_DURATION = 200; // Match with your circle animation duration
           
           lifeScoreTimeoutRef.current = setTimeout(() => {
             setDisplayedLifeScore(lifeScore);
             setAnimating(prev => ({ ...prev, life: true }));
-            setTimeout(() => setAnimating(prev => ({ ...prev, life: false })), 500);
+            setTimeout(() => setAnimating(prev => ({ ...prev, life: false })), 100);
           }, BATTLE_ANIMATION_DURATION);
         }
       }
@@ -141,7 +141,7 @@ const AnimatedBattleStats = ({
         onClick={(e) => onConvertLifeTo("air", e)}
       >
         <div>
-          <strong><AnimatedCounter value={airScore} duration={2000} /></strong>
+          <strong><AnimatedCounter value={airScore} duration={200} /></strong>
         </div>
         <span>💨</span>
         <small>{Math.round(airPrice * 100) / 100}</small>
@@ -152,7 +152,7 @@ const AnimatedBattleStats = ({
         onClick={(e) => onConvertLifeTo("earth", e)}
       >
         <div>
-          <strong><AnimatedCounter value={earthScore} duration={2000} /></strong>
+          <strong><AnimatedCounter value={earthScore} duration={200} /></strong>
         </div>
         <span>⛰️</span>
         <small>{Math.round(earthPrice * 100) / 100}</small>
@@ -163,7 +163,7 @@ const AnimatedBattleStats = ({
         onClick={(e) => onConvertLifeTo("fire", e)}
       >
         <div>
-          <strong><AnimatedCounter value={fireScore} duration={2000} /></strong>
+          <strong><AnimatedCounter value={fireScore} duration={200} /></strong>
         </div>
         <span>🔥</span>
         <small>{Math.round(firePrice * 100) / 100}</small>
@@ -174,7 +174,7 @@ const AnimatedBattleStats = ({
         onClick={(e) => onConvertLifeTo("water", e)}
       >
         <div>
-          <strong><AnimatedCounter value={waterScore} duration={2000} /></strong>
+          <strong><AnimatedCounter value={waterScore} duration={200} /></strong>
         </div>
         <span>💧</span>
         <small>{Math.round(waterPrice * 100) / 100}</small>
