@@ -70,7 +70,7 @@ const FloatingMenu = ({ neighborhood = [], attacking = 0, onAttackClick = () => 
             flex items-center justify-center
             transition-all duration-300 ease-in-out
             hover:scale-110
-            ${attacking === neighbor.playerIndex ? 'shadow-[inset_0_0_15px_rgba(239,68,68,0.7)]' : 'bg-transparent'}
+            ${attacking === neighbor.playerIndex ? 'shadow-[inset_0_0_20px_rgba(239,68,68,0.7)]' : 'bg-transparent'}
           `}
           style={{
             ...getItemStyle(index),
