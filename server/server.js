@@ -48,8 +48,6 @@ const io = new Server(server, {
     allowEIO3: true // Allow Engine.IO version 3 clients if needed
 });
 
-const LIFE_SCORE_MULTIPLIER = 1.5;
-
 const nameList = [
     'Time','Past','Future','Dev',
     'Fly','Flying','Soar','Soaring','Power','Falling',
@@ -142,6 +140,8 @@ const initGame = (roomId) => {
         weather: "clear",
         roundDuration: 20,
         firstPlayerId: null,
+        marketVariance: 5,
+        lifeGrowthRate: 1.5,
         allMoveHistory: ""
     }
 }
@@ -445,6 +445,15 @@ io.on('connection', (socket) => {
         if (args.settings.numPlayers) {
             gameState.numPlayers = Math.min(Math.max(parseInt(args.settings.numPlayers), 1), 20);
         }
+        if (args.settings.marketVariance) {
+            gameState.marketVariance = Math.min(Math.max(parseInt(args.settings.marketVariance), 1), 10);
+        }
+        if (args.settings.attackFriction) {
+            gameState.attackFriction = Math.min(Math.max(parseFloat(args.settings.attackFriction), 0), 1);
+        }
+        if (args.settings.lifeGrowthRate) {
+            gameState.lifeGrowthRate = Math.min(Math.max(parseFloat(args.settings.lifeGrowthRate), 1), 10);
+        }
 
         // Save game state
         saveGameState(gameState);
@@ -482,7 +491,7 @@ io.on('connection', (socket) => {
 
         // Generate initial market prices and weather
         gameState.weather = generateWeather();
-        let newPrices = generateMarket();
+        let newPrices = generateMarket(gameState.marketVariance);
         gameState.airPrice = newPrices.airPrice;
         gameState.earthPrice = newPrices.earthPrice;
         gameState.firePrice = newPrices.firePrice;
@@ -884,8 +893,8 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'healthy' });
 });
 
-function combat(attackingArmy, defendingArmy, weather, defenderLife) {
-    let attackMultiplier = 1
+function combat(attackingArmy, defendingArmy, weather, defenderLife, attackFriction) {
+    let attackMultiplier = 1 - attackFriction; // Attack Friction reduces attack effectiveness
     let defendMultiplier = 1
 
     if (attackingArmy.element == "air" && defendingArmy.element == "earth") {
@@ -1015,27 +1024,40 @@ function generateWeather() {
     return weather
 }
 
-function generateMarket() {
+function generateMarket(variance = 5) {
+    // If variance is 1, all prices should be 0.25
+    // If variance is 10, should work like the original function
+    // Scale variance to 0-1 range for interpolation
+    const varianceFactor = (variance - 1) / 9;
+    
+    // Generate raw random values
     let rawAirRNG = getRandomInt(100);
     let rawEarthRNG = getRandomInt(100);
     let rawFireRNG = getRandomInt(100);
     let rawWaterRNG = getRandomInt(100);
     let rawTotal = rawAirRNG + rawEarthRNG + rawFireRNG + rawWaterRNG;
-
+    
+    // Calculate fully random prices (sum to 1)
+    const randomAirPrice = rawAirRNG / rawTotal;
+    const randomEarthPrice = rawEarthRNG / rawTotal;
+    const randomFirePrice = rawFireRNG / rawTotal;
+    const randomWaterPrice = rawWaterRNG / rawTotal;
+    
+    // Stable price (0.25 each)
+    const stablePrice = 0.25;
+    
+    // Interpolate between stable and random prices based on variance
     return {
-        airPrice: Math.round(rawAirRNG * 10000 / rawTotal) / 10000,
-        earthPrice: Math.round(rawEarthRNG * 10000 / rawTotal) / 10000,
-        firePrice: Math.round(rawFireRNG * 10000 / rawTotal) / 10000,
-        waterPrice: Math.round(rawWaterRNG * 10000 / rawTotal) / 10000
-    }
+        airPrice: Math.round((stablePrice * (1 - varianceFactor) + randomAirPrice * varianceFactor) * 10000) / 10000,
+        earthPrice: Math.round((stablePrice * (1 - varianceFactor) + randomEarthPrice * varianceFactor) * 10000) / 10000,
+        firePrice: Math.round((stablePrice * (1 - varianceFactor) + randomFirePrice * varianceFactor) * 10000) / 10000,
+        waterPrice: Math.round((stablePrice * (1 - varianceFactor) + randomWaterPrice * varianceFactor) * 10000) / 10000
+    };
 }
 
 function generateNeighborhood(gameState, playerIndex) {
     let totalPlayerCount = gameState.players.length;
-
     let maxNeighborhoodSize = 1;
-
-    console.log("TOTALPLAYERS:", totalPlayerCount);
 
     if (totalPlayerCount < 2) {
         return;
@@ -1046,8 +1068,6 @@ function generateNeighborhood(gameState, playerIndex) {
     } else if (totalPlayerCount >= 8) {
         maxNeighborhoodSize = 4;
     }
-
-    console.log("maxNeighborhoodSize:", maxNeighborhoodSize);
 
     // TODO: skew more towards 2-3 than towards 1 or 4
     let neighborhoodSize = getRandomInt(maxNeighborhoodSize);
@@ -1144,7 +1164,7 @@ function processRoundAndProceed(roomId) {
             let firstPassShouldGoAnyway = defendingStrengthAndType.amount == 0;
 
             while (attackingStrengthAndType.amount > 0 && (defendingStrengthAndType.amount > 0 || firstPassShouldGoAnyway)) {
-                battleResults = combat({size: attackingStrengthAndType.amount, element: attackingStrengthAndType.troopType}, {size: defendingStrengthAndType.amount, element: defendingStrengthAndType.troopType}, gameState.weather, defendingPlayer.life);
+                battleResults = combat({size: attackingStrengthAndType.amount, element: attackingStrengthAndType.troopType}, {size: defendingStrengthAndType.amount, element: defendingStrengthAndType.troopType}, gameState.weather, defendingPlayer.life, gameState.attackFriction);
                 
                 playingPlayer[attackingStrengthAndType.troopType] = battleResults.attackRemaining;
                 defendingPlayer[defendingStrengthAndType.troopType] = battleResults.defendRemaining;
@@ -1177,7 +1197,7 @@ function processRoundAndProceed(roomId) {
 
     // Now double everyone's life and alert them of playerState changes
     for (const player of gameState.players) {
-        player.life = player.life * LIFE_SCORE_MULTIPLIER;
+        player.life = player.life * gameState.lifeGrowthRate;
         player.attacking = "";
         player.isScrying = false;
         generateNeighborhood(gameState, player.playerIndex);
@@ -1214,7 +1234,7 @@ function processRoundAndProceed(roomId) {
     }
 
     gameState.weather = generateWeather();
-    let newPrices = generateMarket();
+    let newPrices = generateMarket(gameState.marketVariance);
     gameState.airPrice = newPrices.airPrice;
     gameState.earthPrice = newPrices.earthPrice;
     gameState.firePrice = newPrices.firePrice;

@@ -64,10 +64,5 @@ heroku logs --tail
 
 ## TODO
 
-- [ ] More GameSettings
-    - Market variance
-    - Attack friction
-    - Life growth rate
-    - Bot behavior
-    - Scry: full vs combined
-- [ ] Proper attack emissions and depictions
+- [ ] Bot behavior profiles
+- [ ] Fix attack skirmish emissions and animations
