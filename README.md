@@ -65,4 +65,5 @@ heroku logs --tail
 ## TODO
 
 - [ ] Bot behavior profiles
-- [ ] Fix attack skirmish emissions and animations
+- [ ] Hold to funnel energy faster
+- [ ] Spell scaling
