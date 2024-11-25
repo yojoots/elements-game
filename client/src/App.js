@@ -121,10 +121,11 @@ function ElementsApp() {
     <AppWrapper isAuth={isAuth} setIsAuth={setIsAuth} setIsInChat={setIsInChat}>
       {!isInChat ? (
         <div className="room">
-          <label className="text-white"> Game ID: </label>
+          <img src="./bg.png" id="bg-img" alt="background"></img>
+          <label className="text-white mt-10">Game ID</label>
           <input
             value={room}
-            placeholder="(leave blank to auto-generate)"
+            placeholder="Enter game ID (or leave blank)"
             onKeyDown={(e) => { if (e.key === 'Enter') { tryToJoin() }}}
             onChange={(e) => { setRoom(e.target.value); }}
           />
@@ -132,7 +133,7 @@ function ElementsApp() {
             className="auth-button"
             onClick={tryToJoin}
           >
-            Join / Create
+            Start
           </button>
         </div>
       ) : (

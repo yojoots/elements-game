@@ -4,6 +4,7 @@ import GameSettings from "./GameSettings";
 import FloatingMenu from "./FloatingMenu";
 import JoinedPlayersList from "./JoinedPlayersList";
 import InlineNicknameEditor from './InlineNicknameEditor';
+import StartButton from './StartButton';
 import { TooltipProvider, InfoBubble, ForceVisibleWhen } from './TooltipSystem';
 import Hexagon from "./Hexagon";
 import { Draggable } from "../lib";
@@ -646,7 +647,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   }
 
   return (
-    <TooltipProvider>
+    <TooltipProvider round={roundNumber}>
         <div className="dashboard-app">
           <div className="header fixed">
             <div className="messages">
@@ -695,14 +696,9 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 setShowSettings={setShowSettings}
               />
           )}
+
           {!showSettings && roundNumber === 0 && (
-            <button 
-              title="Start"
-              onClick={() => setShowSettings(true)}
-              className="fixed bottom-4 right-4 p-2 text-blue-400 text-xs rounded shadow z-101"
-            >
-              <Play fill="lightgreen" stroke="lightgreen" size={24} />
-            </button>
+            <StartButton onClick={() => setShowSettings(true)} />
           )}
           {false && !showSettings && roundNumber === 0 && (
             <button 
@@ -780,7 +776,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
                 <ForceVisibleWhen when={airScore > 0 && fireScore > 0 && waterScore > 0}>
                   <div>
                     <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
-                    <InfoBubble className="absolute top-0" direction="upperleft" tooltipStyle={{top: "115px", left: "-2px", width: '170px'}}>
+                    <InfoBubble className="absolute top-0" direction="downleft" tooltipStyle={{top: "-102px", left: "-2px", width: '170px'}}>
                       <b className="small-caps">Spells Cost Elements</b>
                       <br />
                       Combine 3 elements to cast a spell 1x per round.<br />

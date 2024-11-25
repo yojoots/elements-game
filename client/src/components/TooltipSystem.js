@@ -1,21 +1,34 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Info } from 'lucide-react';
+import { Info, ArrowLeft } from 'lucide-react';
 
 // Create context for managing overlay state
 const TooltipContext = createContext();
 
-export const TooltipProvider = ({ children }) => {
+export const TooltipProvider = ({ children, round = 0 }) => {
   const [isShowingHelp, setIsShowingHelp] = useState(false);
+  const [hasSeenHelp, setHasSeenHelp] = useState(false);
+
+  const handleHelpToggle = (showing) => {
+    setIsShowingHelp(showing);
+    if (showing) setHasSeenHelp(true);
+  };
 
   return (
     <TooltipContext.Provider value={{ isShowingHelp, setIsShowingHelp }}>
-      {/* Info Icon */}
-      <div 
-        className="fixed top-10 left-6 z-50 cursor-help"
-        onMouseEnter={() => setIsShowingHelp(true)}
-        onMouseLeave={() => setIsShowingHelp(false)}
-      >
-        <Info className="w-6 h-6 text-blue-400 hover:text-blue-500 transition-colors" />
+      {/* Info Icon and Instruction Prompt Container */}
+      <div className="fixed top-10 left-6 flex items-center gap-2 z-50">
+        <div
+          className="cursor-help"
+          onMouseEnter={() => handleHelpToggle(true)}
+          onMouseLeave={() => handleHelpToggle(false)}
+        >
+          <Info className="w-6 h-6 text-blue-400 hover:text-blue-500 transition-colors" />
+        </div>
+        
+        {/* Instruction Prompt */}
+        {!hasSeenHelp && round == 0 && (
+            <h3 class="rainbow rainbow_text_animated"> <span style={{fontSize: '20px'}}>←</span> <span style={{verticalAlign: 'top'}}>Instructions</span></h3>
+        )}
       </div>
 
       {/* Dark Overlay */}
@@ -60,6 +73,7 @@ export const InfoBubble = ({ children, className = "", direction = "down", toolt
     right: "-right-2 top-1/2 transform -translate-y-1/2",
     lowright: "-right-2 top-1/2 transform mt-6",
     downright: "-bottom-2 left-1/2 transform -translate-x-1/2 ml-12",
+    downleft: "-bottom-2 right-1/2 transform -translate-x-1/2 mr-4",
     upperleft: "-top-2 right-1/2 transform mr-6",
   };
 
@@ -70,6 +84,7 @@ export const InfoBubble = ({ children, className = "", direction = "down", toolt
     right: "rotate-45",
     lowright: "rotate-45",
     downright: "rotate-45",
+    downleft: "rotate-45",
     upperleft: "-rotate-45"
   };
 

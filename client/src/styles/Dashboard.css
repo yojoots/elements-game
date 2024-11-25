@@ -1074,3 +1074,40 @@ text-align: center;
   border-style: solid;
   box-shadow: 1px 1px 5px #93ffed;
 }
+
+.rainbow {
+  text-align: center;
+  text-decoration: underline;
+  font-size: 14px;
+  line-height: 14px;
+  vertical-align: top;
+  letter-spacing: 2px;    font-variant: small-caps;
+
+}
+
+.rainbow_text_animated {
+  background: linear-gradient(to right, #6666ff, #0099ff, #00ff00, #ff3399, #0099ff, #00ff00, #ff3399, #6666ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow_animation 2s linear infinite;
+  background-size: 400% 100%;
+}
+
+@keyframes rainbow_animation {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+
+.start-text {
+  position: relative;
+  bottom: 6px;
+  right: 6px;
+  user-select: none;
+  font-variant: small-caps;
+}
