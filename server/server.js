@@ -142,6 +142,7 @@ const initGame = (roomId) => {
         firstPlayerId: null,
         marketVariance: 5,
         lifeGrowthRate: 1.5,
+        attackFriction: 0.1,
         allMoveHistory: ""
     }
 }
@@ -437,7 +438,7 @@ io.on('connection', (socket) => {
 
         // Update settings
         if (args.settings.roundCount) {
-            gameState.roundCount = Math.min(Math.max(parseInt(args.settings.roundCount), 1), 20);
+            gameState.roundCount = Math.min(Math.max(parseInt(args.settings.roundCount), 1), 50);
         }
         if (args.settings.roundDuration) {
             gameState.roundDuration = Math.min(Math.max(parseInt(args.settings.roundDuration), 5), 300);
@@ -499,6 +500,8 @@ io.on('connection', (socket) => {
 
         // Save the game state
         saveGameState(gameState);
+
+        console.log("::::::::::::::::XXXXXXXXXXXX:::::::::::::::: Starting game", gameState);
 
         // Notify all clients about the new round
         io.to(args.roomId).emit('newRound', {
@@ -1117,6 +1120,56 @@ function topTroops(player, attackingOrDefending) {
     return {troopType: "none", amount: 0}
 }
 
+function getAllTroops(player, attackingOrDefending) {
+    let troops = [];
+    
+    // First check for buffs
+    if (attackingOrDefending === "attack" && player.empower > 0) {
+        troops.push({troopType: "empower", amount: player.empower});
+    }
+    
+    if (attackingOrDefending === "defend" && player.fortify > 0) {
+        troops.push({troopType: "fortify", amount: player.fortify});
+    }
+    
+    // Then add all non-zero elements in order
+    for (let c = 0; c < player.order.length; c++) {
+        let troopType = helpers.letterToElement(player.order.charAt(c));
+        if (player[troopType] > 0) {
+            troops.push({troopType: troopType, amount: player[troopType]});
+        }
+    }
+    
+    return troops;
+}
+
+
+function calculateTroopVisuals(amount) {
+    // Since the game internally uses values multiplied by 100,
+    // we need to scale them down for visual representation
+    return Math.round(amount / 100);
+}
+
+function emitSkirmishEventWithDelay(io, roomId, event, delay) {
+    setTimeout(() => {
+        const timeString = new Date().getTime().toString();
+        const eventHash = helpers.hashCode(JSON.stringify(event) + timeString);
+        
+        // Scale down amounts for visual representation
+        const scaledEvent = {
+            ...event,
+            amount: event.amount ? calculateTroopVisuals(event.amount) : 0,
+            lifeLooted: event.lifeLooted ? calculateTroopVisuals(event.lifeLooted) : 0,
+            id: eventHash,
+            key: eventHash,
+            room: roomId
+        };
+        
+        io.to(event.defenderId).emit('skirmishResult', scaledEvent);
+        io.to(event.attackerId).emit('skirmishResult', scaledEvent);
+    }, delay);
+}
+
 function processRoundAndProceed(roomId) {
     gameState = knownGameStates[roomId];
 
@@ -1146,52 +1199,156 @@ function processRoundAndProceed(roomId) {
             processBotActions(gameState, playingPlayer);
         }
 
-        console.log("TURN", turn);
-        console.log("PLAYING PLAYER:", playingPlayer.id);
+        console.log(`TURN ${turn} PLAYER: ${playingPlayer.id}`);
         if (playingPlayer.attacking > 0) {
             let defendingPlayer = getPlayerByPlayerIndex(gameState, playingPlayer.attacking);
             if (defendingPlayer.id === playingPlayer.id) {
-                // Can't attack yourself, silly
-                continue;
+                continue; // Can't attack yourself
             }
-
-            gameState.allMoveHistory += `[P${player.playerIndex}:attack(${playingPlayer.attacking})]`;
-
-            // Execute attack
+        
+            gameState.allMoveHistory += `[P${playingPlayer.playerIndex}:attack(${playingPlayer.attacking})]`;
+        
             console.log(`Player ${playingPlayer.playerIndex} (${playingPlayer.nickname}) ATTACKING THE DEFENDER: ${defendingPlayer.playerIndex} (${defendingPlayer.nickname})`);
-            let attackingStrengthAndType = topTroops(playingPlayer, "attack");
-            let defendingStrengthAndType = topTroops(defendingPlayer, "defend");
-            let firstPassShouldGoAnyway = defendingStrengthAndType.amount == 0;
+            
+            let cumulativeDelay = 0;
+            const TROOPS_OUT_DURATION = 600;
+            const COMBAT_DURATION = 500;
+            const TROOPS_RETURN_DURATION = 1000;
+            const SKIRMISH_GAP = 100;
+        
+            // Get all available troops for both players
+            let attackingTroops = getAllTroops(playingPlayer, "attack");
+            let defendingTroops = getAllTroops(defendingPlayer, "defend");
+            let totalLootableLife = defendingPlayer.life;
+            let totalLifeLooted = 0;
+            let lootingAnimations = []; // Store looting animations for later
 
-            while (attackingStrengthAndType.amount > 0 && (defendingStrengthAndType.amount > 0 || firstPassShouldGoAnyway)) {
-                battleResults = combat({size: attackingStrengthAndType.amount, element: attackingStrengthAndType.troopType}, {size: defendingStrengthAndType.amount, element: defendingStrengthAndType.troopType}, gameState.weather, defendingPlayer.life, gameState.attackFriction);
+            // First phase: Process all combat
+            for (let attackingTroop of attackingTroops) {
+                // Get corresponding defending troop
+                let defendingTroop = defendingTroops.length > 0 ? defendingTroops[0] : {troopType: "none", amount: 0};
                 
-                playingPlayer[attackingStrengthAndType.troopType] = battleResults.attackRemaining;
-                defendingPlayer[defendingStrengthAndType.troopType] = battleResults.defendRemaining;
+                // Emit troops-out event
+                emitSkirmishEventWithDelay(io, roomId, {
+                    type: 'troops-out',
+                    attackerId: playingPlayer.id,
+                    defenderId: defendingPlayer.id,
+                    element: attackingTroop.troopType,
+                    amount: attackingTroop.amount
+                }, cumulativeDelay);
+                
+                // Process combat
+                let battleResults = combat(
+                    {size: attackingTroop.amount, element: attackingTroop.troopType},
+                    {size: defendingTroop.amount, element: defendingTroop.troopType},
+                    gameState.weather,
+                    totalLootableLife,
+                    gameState.attackFriction
+                );
+                
+                // Update states
+                playingPlayer[attackingTroop.troopType] = battleResults.attackRemaining;
+                if (defendingTroop.troopType !== "none") {
+                    defendingPlayer[defendingTroop.troopType] = battleResults.defendRemaining;
+                    defendingTroops.shift();
+                }
 
-                let timeString = new Date().getTime().toString();
-                let battleResultsHash = helpers.hashCode(JSON.stringify(battleResults) + timeString);
-                console.log('Emitting battleResults:', battleResultsHash);
-
-                io.to(defendingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, attackTroopColor: battleResults.attackTroopColor, defendTroopColor: battleResults.defendTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
-                io.to(playingPlayer.id).emit('battleResults', {room: roomId, attackRemaining: battleResults.attackRemaining, defendRemaining: battleResults.defendRemaining, attackTroopColor: battleResults.attackTroopColor, defendTroopColor: battleResults.defendTroopColor, attackingPlayerId: playingPlayer.id, lifeLooted: battleResults.lifeLooted, text: JSON.stringify(battleResults), id: battleResultsHash, key: battleResultsHash});
-                attackingStrengthAndType = topTroops(playingPlayer, "attack");
-                defendingStrengthAndType = topTroops(defendingPlayer, "defend");
-                firstPassShouldGoAnyway = false;
+                // Update lootable life and store looting animation if needed
+                if (battleResults.lifeLooted > 0) {
+                    totalLootableLife -= battleResults.lifeLooted;
+                    totalLifeLooted += battleResults.lifeLooted;
+                    lootingAnimations.push({
+                        element: attackingTroop.troopType,
+                        amount: battleResults.attackRemaining,
+                        lifeLooted: battleResults.lifeLooted
+                    });
+                    
+                    // Emit skirmish-result with life looting
+                    emitSkirmishEventWithDelay(io, roomId, {
+                        type: 'skirmish-result',
+                        attackerId: playingPlayer.id,
+                        defenderId: defendingPlayer.id,
+                        attackElement: attackingTroop.troopType,
+                        defendElement: defendingTroop.troopType,
+                        attackRemaining: battleResults.attackRemaining,
+                        defendRemaining: battleResults.defendRemaining,
+                        lifeLooted: battleResults.lifeLooted
+                    }, cumulativeDelay + TROOPS_OUT_DURATION);
+                } else {
+                    // Only emit skirmish-result if no life was looted
+                    emitSkirmishEventWithDelay(io, roomId, {
+                        type: 'skirmish-result',
+                        attackerId: playingPlayer.id,
+                        defenderId: defendingPlayer.id,
+                        attackElement: attackingTroop.troopType,
+                        defendElement: defendingTroop.troopType,
+                        attackRemaining: battleResults.attackRemaining,
+                        defendRemaining: battleResults.defendRemaining,
+                        lifeLooted: 0
+                    }, cumulativeDelay + TROOPS_OUT_DURATION);
+                }
+                
+                // If troops are returning (without loot), emit return event
+                if (battleResults.attackRemaining > 0 && battleResults.lifeLooted === 0) {
+                    emitSkirmishEventWithDelay(io, roomId, {
+                        type: 'troops-return',
+                        attackerId: playingPlayer.id,
+                        defenderId: defendingPlayer.id,
+                        element: attackingTroop.troopType,
+                        amount: battleResults.attackRemaining,
+                        lifeLooted: 0
+                    }, cumulativeDelay + TROOPS_OUT_DURATION + COMBAT_DURATION);
+                }
+                
+                // Increase delay for next troop type
+                cumulativeDelay += TROOPS_OUT_DURATION + COMBAT_DURATION + TROOPS_RETURN_DURATION + SKIRMISH_GAP;
             }
-
-            if (attackingStrengthAndType.amount > 0) {
-                console.log("ATTACKER WINS!");
-                let totalLooters = playingPlayer.empower + playingPlayer.air + playingPlayer.earth + playingPlayer.fire + playingPlayer.water;
-                let lootableValue = Math.min(totalLooters, defendingPlayer.life);
-                defendingPlayer.life -= lootableValue;
-                playingPlayer.life += lootableValue;
-                console.log("LOOTED LIFE:", lootableValue);
-            } else if (defendingStrengthAndType.amount > 0) {
-                console.log("DEFENDER WINS!");
-            } else {
-                console.log("MUTUAL DESTRUCTION!");
+        
+            // Second phase: Process all looting animations after combat is complete
+            for (let lootingAnimation of lootingAnimations) {
+                // For the attacker: show troops returning with loot
+                emitSkirmishEventWithDelay(io, roomId, {
+                    type: 'troops-return',
+                    attackerId: playingPlayer.id,
+                    defenderId: defendingPlayer.id,
+                    element: lootingAnimation.element,
+                    amount: lootingAnimation.amount,
+                    lifeLooted: lootingAnimation.lifeLooted
+                }, cumulativeDelay);
+        
+                // No need for a separate skirmish-result event
+                // The troops-return event with lifeLooted > 0 will trigger
+                // the appropriate animation for both attacker and defender
+        
+                // Increase delay for next looting animation
+                cumulativeDelay += TROOPS_OUT_DURATION + SKIRMISH_GAP;
             }
+        
+            // Update final life totals after all combat and looting is complete
+            if (totalLifeLooted > 0) {
+                defendingPlayer.life -= totalLifeLooted;
+                playingPlayer.life += totalLifeLooted;
+                console.log("TOTAL LIFE LOOTED:", totalLifeLooted);
+            }
+        
+            // Make sure the game state updates after all animations complete
+            setTimeout(() => {
+                // Update player states and emit other end-of-round events
+                for (const player of gameState.players) {
+                    player.life = player.life * gameState.lifeGrowthRate;
+                    player.attacking = "";
+                    player.isScrying = false;
+                    generateNeighborhood(gameState, player.playerIndex);
+                    if (!player.isBot) {
+                        io.to(player.id).emit('playerState', {
+                            room: roomId,
+                            user: player.id,
+                            playerState: player,
+                            allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))
+                        });
+                    }
+                }
+            }, cumulativeDelay + 1000); // Add buffer after last animation
         }
     }
 

@@ -13,6 +13,7 @@ import { auth } from "../firebase-config.js";
 import { signOut } from "firebase/auth";
 import { Play } from 'lucide-react';
 import Cookies from "universal-cookie";
+import { colorFromElement } from "../lib/helpers";
 
 import "../styles/Dashboard.css";
 const cookies = new Cookies();
@@ -23,7 +24,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [nickname, setNickname] = useState("Nickname");
   const [roundDuration, setRoundDuration] = useState(20);
   const [roundNumber, setRoundNumber] = useState(0);
-  const [roundCount, setRoundCount] = useState(5);
+  const [roundCount, setRoundCount] = useState(10);
   const [playerColor, setPlayerColor] = useState("black");
   const [isJoined, setIsJoined] = useState(false);
   const [gameIsOver, setGameIsOver] = useState(false);
@@ -46,12 +47,10 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [fortifyScore, setFortifyScore] = useState(0);
   const [lastSpellCastInRound, setLastSpellCastInRound] = useState(-1);
   const [canCastSpell, setCanCastSpell] = useState(true);
-  const [alreadyDepictedBattles, setAlreadyDepictedBattles] = useState([]);
   const airScoreRef = useRef(airScore);
   const earthScoreRef = useRef(earthScore);
   const fireScoreRef = useRef(fireScore);
   const waterScoreRef = useRef(waterScore);
-  const alreadyDepBat = useRef(alreadyDepictedBattles);
   const [processedEvents, setProcessedEvents] = useState(new Set());
   const [isAutoProceed, setIsAutoProceed] = useState(false);
   const [serverTime, setServerTime] = useState(null);
@@ -62,10 +61,6 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [allPlayers, setAllPlayers] = useState([]);
   const [isSpectator, setIsSpectator] = useState(false);
   const [spectatorState, setSpectatorState] = useState(null);
-
-  useEffect(() => {
-    alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes
-  }, [alreadyDepictedBattles]);
 
   useEffect(() => {
     // Setup socket connection
@@ -98,6 +93,176 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       setSpectatorState(state);
     });
 
+    socket.on('skirmishResult', (event) => {
+      if (event.room === room && !processedEvents.has(event.id)) {
+        setProcessedEvents((prevSet) => new Set(prevSet).add(event.id));
+    
+        const isAttacker = event.attackerId === currentUser.uid;
+        const isDefender = event.defenderId === currentUser.uid;
+    
+        // Only process events relevant to this player
+        if (!isAttacker && !isDefender) return;
+    
+        switch(event.type) {
+          case 'troops-out':
+            if (isAttacker) {
+              // Attacker sees their troops going out
+              spawnAndMoveCircles(
+                event.amount,
+                colorFromElement(event.element),
+                false
+              );
+            } else if (isDefender) {
+              // Defender sees enemy troops coming in
+              animateCircles(
+                event.amount,
+                colorFromElement(event.element),
+                false
+              );
+            }
+            break;
+    
+          case 'skirmish-result':
+            if (event.lifeLooted > 0) {
+              if (isDefender) {
+                // Defender sees life leaving from center
+                setTimeout(() => {
+                  spawnAndMoveCircles(  // Note: keeping spawnAndMoveCircles instead of animateCircles
+                    event.lifeLooted,
+                    colorFromElement(event.attackElement),
+                    true
+                  );
+                }, 800);
+              }
+            }
+            break;
+    
+          case 'troops-return':
+            if (isAttacker) {
+              // Split returning troops into looting and non-looting
+              const lootingTroops = Math.min(event.lifeLooted, event.amount);
+              const nonLootingTroops = event.amount - lootingTroops;
+    
+              // Show looting troops first if any
+              if (lootingTroops > 0) {
+                animateCircles(
+                  lootingTroops,
+                  colorFromElement(event.element),
+                  true
+                );
+              }
+              
+              // Then show non-looting troops if any
+              if (nonLootingTroops > 0) {
+                animateCircles(
+                  nonLootingTroops,
+                  colorFromElement(event.element),
+                  false
+                );
+              }
+            }
+            break;
+          default:
+            console.log("Unrecognized skirmish event:", event.type);
+        }
+      }
+    });
+
+    function animateCircles(circleCount, circleColor, isLooting) {
+      const circlesToAnimate = calculateVisualCircles(circleCount);
+      for (let i = 0; i < circlesToAnimate.count; i++) {
+        // Stagger the creation of each circle
+        setTimeout(() => {
+          const { arena, arenaWidth } = getArena();
+
+          const circle = document.createElement('div');
+          circle.className = isLooting ? 'alootcircle' : 'circle';
+          circle.style.backgroundColor = circleColor;
+          circle.style.width = `${circlesToAnimate.radius}px`;
+          circle.style.height = `${circlesToAnimate.radius}px`;
+
+          // Positioning circles along the top edge
+          circle.style.top = '0px';
+          circle.style.left = `${(Math.random() * arenaWidth / 4) + (arenaWidth * 3 / 8)}px`; // Random position along the width in the middle half
+
+          arena.appendChild(circle);
+          moveCircle(circle);
+        }, (i * 100) + ((Math.random() * 52) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
+      }
+    }
+
+    function moveCircle(circle) {
+      const { arenaX, arenaY, centerX, centerY } = getArena();
+        circle.dataset.moved = 0;
+        const interval = setInterval(function () {
+            const rect = circle.getBoundingClientRect();
+            const distX = Math.abs((rect.left + (rect.width / 2)) - centerX - arenaX);
+            const distY = Math.abs((rect.top + (rect.height / 2)) - centerY - arenaY);
+            circle.dataset.moved = Number(circle.dataset.moved) + 1;
+            if (distX < 50 && distY < 50) {
+                explodeCircle(circle);
+                clearInterval(interval);
+            }
+
+            // Backup for the weird case when the circles don't explode
+            // even when they've reached the center
+            if (circle.dataset.moved > 100) {
+              explodeCircle(circle);
+              clearInterval(interval);
+            }
+        }, 10);
+    }
+
+    function explodeCircle(circle) {
+        circle.style.transition = 'transform 0.5s, opacity 0.5s';
+        circle.style.transform = 'scale(2)';
+        circle.style.opacity = '0';
+        setTimeout(() => circle.remove(), 250); // Removes the circle after the effect
+    }
+
+    function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
+      const { arena, centerX, centerY } = getArena();
+
+      const circlesToAnimate = calculateVisualCircles(circleCount);
+
+      for (let i = 0; i < circlesToAnimate.count; i++) {
+          setTimeout(() => {
+              const circle = document.createElement('div');
+              circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
+              circle.style.backgroundColor = circleColor;
+              circle.style.opacity = '0';
+              circle.style.transform = 'scale(0.25)';
+              circle.style.width = `${circlesToAnimate.radius}px`;
+              circle.style.height = `${circlesToAnimate.radius}px`;
+
+              const randomizer = Math.random() * 10 - 10;
+              const randomizer2 = Math.random() * 15 - 10;
+
+              circle.style.top = `${centerY - 35 + (randomizer)}px`;
+              circle.style.left = `${centerX - 15 + (randomizer2)}px`;
+
+              arena.appendChild(circle);
+              fadeAndMoveCircle(circle);
+          }, (i * 100) + ((Math.random() * 15) * circlesToAnimate.count - i));
+      }
+
+      function fadeAndMoveCircle(circle) {
+        circle.style.transition = 'top 2s, left 2s, opacity 2s ease-in, transform 2s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        circle.style.opacity = '1';  // Fade in
+        circle.style.transform = 'scale(1)'; // Grow to full size
+
+        setTimeout(() => {
+            const deviation = Math.random() * 100 - 50; // Random deviation from center, range -50 to +50 pixels
+            circle.style.top = '-45px'; // Move above the top edge
+            circle.style.left = `${centerX - 10 + deviation}px`; // Move to a random position along the x-axis
+        }, 500);  // Start moving after fully appearing
+
+        setTimeout(() => {
+            circle.remove();  // Remove circle from DOM after it moves out
+        }, 2500);  // Enough time to finish moving
+      }
+    }
+
     // Cleanup
     return () => {
       socket.off('syncTimer');
@@ -106,6 +271,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       socket.off('gameSettings');
       socket.off('firstPlayerStatus');
       socket.off('spectatorState');
+      socket.off('skirmishResult');
     };
   }, [socket]);
 
@@ -238,42 +404,19 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   };
 
   function calculateVisualCircles(totalCount) {
-    // Base case for small numbers
-    if (totalCount <= 2) {
-      return {
-        radius: 20,
-        count: totalCount
-      };
-    }
-
-    // Using logarithmic scaling for both radius and count
-    // Log base 4 gives us a nice gradual increase
-    const baseRadius = 20;
-    const maxRadius = 40;
-    const minCount = 3;
-    const maxCount = 15;
-
-    // Calculate radius
-    // As count increases, radius gradually increases up to maxRadius
-    const radiusScale = Math.min(1 + Math.log(totalCount) / 10, 2);
-    const radius = Math.min(baseRadius * radiusScale, maxRadius);
-
-    // Calculate visual count
-    // Use log base 4 to reduce the number of circles more aggressively
-    const logBase = 4;
-    const suggestedCount = Math.max(
-      minCount,
-      Math.min(
-        Math.round(Math.log(totalCount) / Math.log(logBase) * 2),
-        maxCount
-      )
-    );
-
+    // totalCount is already properly scaled now
+    const radius = 20;
+    
+    // Ensure we show at least 1 circle for very small amounts
+    const minCircles = totalCount > 0 ? 1 : 0;
+    // Cap at 50 circles for visual clarity
+    const count = Math.min(Math.max(Math.round(totalCount), minCircles), 30);
+  
     return {
-      radius: Math.round(radius),
-      count: suggestedCount
+      radius: radius,
+      count: count
     };
-  }  
+  }
 
   useEffect(() => {
     socket.on("connection", (room) => {
@@ -285,168 +428,6 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       if (value.room === room) {
         setMessages(messages => [...messages, value]);
       }
-    }
-
-    function depictBattle(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
-      const attackingCircleCount = ((whatsLeft + colorToElementScore(defendTroopColor)) / 100);
-
-      console.log("ATTACKING:", attackingCircleCount);
-      console.log("TO LOOT:", lifeLooted);
-      if (winnerLeftOrRight === "left") {
-        // Attacker wins and loots
-        // We are the defender
-        animateCircles(attackingCircleCount, attackTroopColor, false); // incoming!
-        setTimeout(() => {
-          spawnAndMoveCircles((lifeLooted / 100), attackTroopColor, true); // looting!
-        }, (attackingCircleCount * 220));
-      } else {
-        spawnAndMoveCircles(attackingCircleCount, 'red', false); // outgoing/attacking
-        setTimeout(() => {
-          animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
-        }, (attackingCircleCount * 220));
-      }
-    }
-
-    function depictAttack(battleId, winnerLeftOrRight, attackTroopColor, defendTroopColor, whatsLeft, lifeLooted) {
-      const attackingCircleCount = (colorToElementScore(attackTroopColor));
-      spawnAndMoveCircles(attackingCircleCount, attackTroopColor, false); // outgoing/attacking
-
-      const circlesToAnimate = calculateVisualCircles(attackingCircleCount);
-
-      console.log("ATTACKINGS:", attackingCircleCount, attackTroopColor);
-      if (winnerLeftOrRight === "left") {
-        console.log("LOOTING:", lifeLooted);
-        // Attacker wins and loots
-        // We are the attacker
-        setTimeout(() => {
-          animateCircles((lifeLooted / 100), attackTroopColor, true); // looting!
-        }, (circlesToAnimate.count) + 2200);
-      }
-    }
-
-    function animateCircles(circleCount, circleColor, isLooting) {
-      const circlesToAnimate = calculateVisualCircles(circleCount);
-      for (let i = 0; i < circlesToAnimate.count; i++) {
-        // Stagger the creation of each circle
-        setTimeout(() => {
-          const { arena, arenaWidth } = getArena();
-
-          const circle = document.createElement('div');
-          circle.className = isLooting ? 'alootcircle' : 'circle';
-          circle.style.backgroundColor = circleColor;
-          circle.style.width = `${circlesToAnimate.radius}px`;
-          circle.style.height = `${circlesToAnimate.radius}px`;
-
-          // Positioning circles along the top edge
-          circle.style.top = '0px';
-          circle.style.left = `${(Math.random() * arenaWidth / 4) + (arenaWidth * 3 / 8)}px`; // Random position along the width in the middle half
-
-          arena.appendChild(circle);
-          moveCircle(circle);
-        }, (i * 100) + ((Math.random() * 52) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
-      }
-    }
-
-    function moveCircle(circle) {
-      const { arenaX, arenaY, centerX, centerY } = getArena();
-        circle.dataset.moved = 0;
-        const interval = setInterval(function () {
-            const rect = circle.getBoundingClientRect();
-            const distX = Math.abs((rect.left + (rect.width / 2)) - centerX - arenaX);
-            const distY = Math.abs((rect.top + (rect.height / 2)) - centerY - arenaY);
-            circle.dataset.moved = Number(circle.dataset.moved) + 1;
-            if (distX < 50 && distY < 50) {
-                explodeCircle(circle);
-                clearInterval(interval);
-            }
-
-            // Backup for the weird case when the circles don't explode
-            // even when they've reached the center
-            if (circle.dataset.moved > 100) {
-              explodeCircle(circle);
-              clearInterval(interval);
-            }
-        }, 10);
-    }
-
-    function explodeCircle(circle) {
-        circle.style.transition = 'transform 0.5s, opacity 0.5s';
-        circle.style.transform = 'scale(2)';
-        circle.style.opacity = '0';
-        setTimeout(() => circle.remove(), 250); // Removes the circle after the effect
-    }
-
-    function spawnAndMoveCircles(circleCount, circleColor, isLooting) {
-      const { arena, centerX, centerY } = getArena();
-      const smallCircleCount = circleCount / 100;
-
-      let circlesToAnimate = calculateVisualCircles(smallCircleCount);
-
-      for (let i = 0; i < circlesToAnimate.count; i++) {
-        setTimeout(() => {
-          const circle = document.createElement('div');
-          circle.className = isLooting ? 'lootcircle' : 'attackingcircle';
-          circle.style.backgroundColor = circleColor;
-          circle.style.opacity = '0';  // Start fully transparent
-          circle.style.transform = 'scale(0.25)'; // Start smaller
-
-          circle.style.width = `${circlesToAnimate.radius}px`;
-          circle.style.height = `${circlesToAnimate.radius}px`;
-
-          const randomizer = Math.random() * 10 - 10; // Random deviation from center, range -50 to +50 pixels
-          const randomizer2 = Math.random() * 15 - 10; // Random deviation from center, range -50 to +50 pixels
-
-          // Positioning circles at the center
-          circle.style.top = `${centerY - 35 + (randomizer)}px`; // Adjusted for the circle's size
-          circle.style.left = `${centerX - 15 + (randomizer2)}px`;
-
-          arena.appendChild(circle);
-          fadeAndMoveCircle(circle);
-        }, (i * 100) + ((Math.random() * 15) * circlesToAnimate.count - i)); // Stagger each circle by 100 milliseconds
-      }
-
-      function fadeAndMoveCircle(circle) {
-        circle.style.transition = 'top 2s, left 2s, opacity 2s ease-in, transform 2s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        circle.style.opacity = '1';  // Fade in
-        circle.style.transform = 'scale(1)'; // Grow to full size
-
-        setTimeout(() => {
-            const deviation = Math.random() * 100 - 50; // Random deviation from center, range -50 to +50 pixels
-            circle.style.top = '-45px'; // Move above the top edge
-            circle.style.left = `${centerX - 10 + deviation}px`; // Move to a random position along the x-axis
-        }, 500);  // Start moving after fully appearing
-
-        setTimeout(() => {
-            circle.remove();  // Remove circle from DOM after it moves out
-        }, 2500);  // Enough time to finish moving
-      }
-    }
-
-    function onBattleResults(value) {
-      const eventId = value.id;
-
-      // Check if the event has already been processed
-      if (!processedEvents.has(eventId)) {
-        if (value.room === room && !alreadyDepBat.current.includes(value.id)) {
-          setAlreadyDepictedBattles(prevIds => [...prevIds, value.id]);
-
-          console.log("BATTLE RESULTS:", value);
-          console.log("alreadyDepictedBattles:", alreadyDepBat.current);
-          let winnerLeftOrRight = "left";
-          let whatsLeft = value.attackRemaining > 0 ? value.attackRemaining : value.defendRemaining;
-          if (value.attackRemaining === 0 && value.defendRemaining > 0) {
-            winnerLeftOrRight = "right";
-          }
-
-          if (value.attackingPlayerId !== currentUser.uid) {
-            // We are the defender
-            depictBattle(value.id, winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
-          } else {
-            depictAttack(value.id, winnerLeftOrRight,value.attackTroopColor,value.defendTroopColor,whatsLeft,value.lifeLooted);
-          }
-        }
-      }
-      setProcessedEvents((prevSet) => new Set(prevSet).add(eventId));
     }
 
     const onPlayerState = (value) => {
@@ -492,14 +473,12 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
     }
 
     socket.on('newMessage', onNewMessage);
-    socket.on('battleResults', onBattleResults);
     socket.on('playerState', onPlayerState);
     socket.on('newRound', onNewRound);
     socket.on('gameResults', onGameResults);
 
     return () => {
       socket.off('newMessage', onNewMessage);
-      socket.off('battleResults', onBattleResults);
       socket.off('playerState', onPlayerState);
       socket.off('newRound', onNewRound);
       socket.off('gameResults', onGameResults);
@@ -577,20 +556,6 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   useEffect(() => {
     setCanCastSpell(lastSpellCastInRound < roundNumber);
   }, [roundNumber, lastSpellCastInRound])
-
-  function colorToElementScore(color) {
-    if (color === "gray") {
-      return airScoreRef.current;
-    } else if (color === "brown") {
-      return earthScoreRef.current;
-    } else if (color === "red") {
-      return fireScoreRef.current;
-    } else if (color === "blue") {
-      return waterScoreRef.current;
-    } else {
-      return 0
-    }
-  }
 
   if (gameIsOver) {
     return (

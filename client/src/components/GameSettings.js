@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
 const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSettings }) => {
-  const [roundCount, setRoundCount] = useState(currentSettings?.roundCount || 5);
+  const [roundCount, setRoundCount] = useState(currentSettings?.roundCount || 10);
   const [roundDuration, setRoundDuration] = useState(currentSettings?.roundDuration || 20);
   const [numPlayers, setNumPlayers] = useState(currentSettings?.numPlayers || 4);
   const [marketVariance, setMarketVariance] = useState(currentSettings?.marketVariance || 5);
-  const [attackFriction, setAttackFriction] = useState(currentSettings?.attackFriction || 0.5);
+  const [attackFriction, setAttackFriction] = useState(currentSettings?.attackFriction || 0.1);
   const [lifeGrowthRate, setLifeGrowthRate] = useState(currentSettings?.lifeGrowthRate || 1.5);
   const [botBehavior, setBotBehavior] = useState(currentSettings?.botBehavior || "random");
   const [settingsLocked, setSettingsLocked] = useState(false);
@@ -16,7 +16,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
     socket.emit("updateGameSettings", {
       roomId: room,
       settings: {
-        roundCount: Math.min(Math.max(parseInt(roundCount), 1), 20),
+        roundCount: Math.min(Math.max(parseInt(roundCount), 1), 50),
         roundDuration: Math.min(Math.max(parseInt(roundDuration), 5), 300),
         numPlayers: Math.min(Math.max(parseInt(numPlayers), 1), 20),
         marketVariance: Math.min(Math.max(parseInt(marketVariance), 1), 10),
@@ -103,7 +103,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
 
                   <div>
                     <label htmlFor="roundCount" className="block text-sm font-medium text-gray-700 mb-1">
-                      Number of Rounds (1-20)
+                      Number of Rounds (1-50)
                     </label>
                     <input
                       id="roundCount"
