@@ -1215,6 +1215,7 @@ function processRoundAndProceed(roomId) {
             const COMBAT_DURATION = 500;
             const TROOPS_RETURN_DURATION = 1000;
             const SKIRMISH_GAP = 100;
+            const LIFE_UPDATE_DELAY = 1000; // Additional delay before life updates
         
             // Get all available troops for both players
             let attackingTroops = getAllTroops(playingPlayer, "attack");
@@ -1222,7 +1223,7 @@ function processRoundAndProceed(roomId) {
             let totalLootableLife = defendingPlayer.life;
             let totalLifeLooted = 0;
             let lootingAnimations = []; // Store looting animations for later
-
+        
             // First phase: Process all combat
             for (let attackingTroop of attackingTroops) {
                 // Get corresponding defending troop
@@ -1324,18 +1325,31 @@ function processRoundAndProceed(roomId) {
                 cumulativeDelay += TROOPS_OUT_DURATION + SKIRMISH_GAP;
             }
         
-            // Update final life totals after all combat and looting is complete
-            if (totalLifeLooted > 0) {
-                defendingPlayer.life -= totalLifeLooted;
-                playingPlayer.life += totalLifeLooted;
-                console.log("TOTAL LIFE LOOTED:", totalLifeLooted);
-            }
-        
             // Make sure the game state updates after all animations complete
+            // Update final life totals after all combat and looting animations complete
             setTimeout(() => {
-                // Update player states and emit other end-of-round events
+                if (totalLifeLooted > 0) {
+                    defendingPlayer.life -= totalLifeLooted;
+                    playingPlayer.life += totalLifeLooted;
+                    console.log("TOTAL LIFE LOOTED:", totalLifeLooted);
+                    
+                    // Emit updated player states after life adjustment
+                    io.to(defendingPlayer.id).emit('playerState', {
+                        room: roomId,
+                        user: defendingPlayer.id,
+                        playerState: defendingPlayer,
+                        allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))
+                    });
+                    io.to(playingPlayer.id).emit('playerState', {
+                        room: roomId,
+                        user: playingPlayer.id,
+                        playerState: playingPlayer,
+                        allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))
+                    });
+                }
+
+                // Update other player states and emit other end-of-round events
                 for (const player of gameState.players) {
-                    player.life = player.life * gameState.lifeGrowthRate;
                     player.attacking = "";
                     player.isScrying = false;
                     generateNeighborhood(gameState, player.playerIndex);
@@ -1348,7 +1362,7 @@ function processRoundAndProceed(roomId) {
                         });
                     }
                 }
-            }, cumulativeDelay + 1000); // Add buffer after last animation
+            }, cumulativeDelay + LIFE_UPDATE_DELAY);
         }
     }
 

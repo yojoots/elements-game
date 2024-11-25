@@ -210,7 +210,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 <label className="block text-sm font-medium text-slate-100">
                   Number of Players
                 </label>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
                   {currentSettings?.numPlayers || 4}
                 </p>
               </div>
@@ -218,7 +218,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 <label className="block text-sm font-medium text-slate-100">
                   Number of Rounds
                 </label>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
                   {currentSettings?.roundCount || 5}
                 </p>
               </div>
@@ -226,7 +226,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 <label className="block text-sm font-medium text-slate-100">
                   Round Duration
                 </label>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
                   {currentSettings?.roundDuration || 20} seconds
                 </p>
               </div>
@@ -234,7 +234,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 <label className="block text-sm font-medium text-slate-100">
                   Market Variance
                 </label>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
                   {currentSettings?.marketVariance || 5}
                 </p>
               </div>
@@ -242,7 +242,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 <label className="block text-sm font-medium text-slate-100">
                   Attack Friction
                 </label>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
                   {currentSettings?.attackFriction || 0.1}
                 </p>
               </div>
@@ -250,7 +250,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 <label className="block text-sm font-medium text-slate-100">
                   Life Growth Rate
                 </label>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
                   {currentSettings?.lifeGrowthRate || 1.5}
                 </p>
               </div>
@@ -258,7 +258,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 <label className="block text-sm font-medium text-slate-100">
                   Bot Behavior Profile
                 </label>
-                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
                   {currentSettings?.botBehavior || "Random"}
                 </p>
               </div>
