@@ -41,19 +41,19 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
 
   return (
     <div className="fixed inset-y-0 flex min-w-full items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 transform transition-all">
+      <div className="rounded-lg shadow-xl w-full max-w-lg mx-4 transform transition-all settings-form">
         <div className="border-b border-gray-200 p-4">
           <button 
             onClick={() => setShowSettings(false)} 
-            className="absolute top-2 right-2 text-gray-400 text-xl hover:text-gray-500"
+            className="absolute top-2 right-2 text-white-400 text-xl hover:text-slate-500"
             aria-label="Close"
           >
             ×
           </button>
-          <h2 className="text-xl font-semibold text-gray-800">
+          <h2 className="text-xl font-semibold text-slate-100">
             {isFirstPlayer ? 'Game Settings' : 'Current Game Settings'}
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-white-100">
             {isFirstPlayer 
               ? settingsLocked 
                 ? 'Settings saved - ready to start the game.'
@@ -86,7 +86,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
 
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="numPlayers" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="numPlayers" className="block text-sm font-medium text-slate-100 mb-1">
                       Number of Players (1-20)
                     </label>
                     <input
@@ -102,7 +102,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                   </div>
 
                   <div>
-                    <label htmlFor="roundCount" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="roundCount" className="block text-sm font-medium text-slate-100 mb-1">
                       Number of Rounds (1-50)
                     </label>
                     <input
@@ -118,7 +118,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                   </div>
                   
                   <div>
-                    <label htmlFor="roundDuration" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="roundDuration" className="block text-sm font-medium text-slate-100 mb-1">
                       Round Duration (5-300 seconds)
                     </label>
                     <input
@@ -134,7 +134,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                   </div>
 
                   <div>
-                    <label htmlFor="marketVariance" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="marketVariance" className="block text-sm font-medium text-slate-100 mb-1">
                       Market Variance (1-10)
                     </label>
                     <input
@@ -150,7 +150,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                   </div>
 
                   <div>
-                    <label htmlFor="attackFriction" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="attackFriction" className="block text-sm font-medium text-slate-100 mb-1">
                       Attack Friction (0-1)
                     </label>
                     <input
@@ -167,7 +167,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                   </div>
 
                   <div>
-                    <label htmlFor="lifeGrowthRate" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="lifeGrowthRate" className="block text-sm font-medium text-slate-100 mb-1">
                       Life Growth Rate (1-10)
                     </label>
                     <input
@@ -184,7 +184,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                   </div>
 
                   <div>
-                    <label htmlFor="botBehavior" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="botBehavior" className="block text-sm font-medium text-slate-100 mb-1">
                       Bot Behavior Profile
                     </label>
                     <select
@@ -207,7 +207,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
           ) : (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-100">
                   Number of Players
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
@@ -215,7 +215,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-100">
                   Number of Rounds
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
@@ -223,7 +223,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-100">
                   Round Duration
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
@@ -231,7 +231,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-100">
                   Market Variance
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
@@ -239,7 +239,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-100">
                   Attack Friction
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
@@ -247,7 +247,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-100">
                   Life Growth Rate
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">
@@ -255,7 +255,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-slate-100">
                   Bot Behavior Profile
                 </label>
                 <p className="mt-1 text-2xl font-semibold text-gray-900">

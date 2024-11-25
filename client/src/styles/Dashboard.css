@@ -585,7 +585,7 @@ h4 {
   background-color: #06261f;
   border: 1px solid #ffffff0f;
   background-color: transparent;
-  border: 1px groove #ffffffab;
+  border: 1px groove #5cfff457;
   border-radius: 50%;
   width: 100px;
   height: 100px;
@@ -1066,4 +1066,11 @@ text-align: center;
 
 .z-101 {
   z-index: 101;
+}
+
+.settings-form {
+  background-image: linear-gradient(to right top, #051937, #001b2c, #00191d, #00150e, #080e06);
+  border: 1px solid #3b6247;
+  border-style: solid;
+  box-shadow: 1px 1px 5px #93ffed;
 }

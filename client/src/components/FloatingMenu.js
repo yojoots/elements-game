@@ -25,8 +25,8 @@ const FloatingMenu = ({ neighborhood = [], attacking = 0, onAttackClick = () => 
     if (totalItems === 2) {
       // Position two items closer together, from -60° to -120°
       const radius = 80;
-      const angleSpread = 50; // Degrees between items
-      const baseAngle = -130; // Center angle
+      const angleSpread = 50;
+      const baseAngle = -130;
       const angle = (baseAngle + (angleSpread * (index - 0.5))) * (Math.PI / 180);
       
       return {
@@ -46,7 +46,7 @@ const FloatingMenu = ({ neighborhood = [], attacking = 0, onAttackClick = () => 
     return {
       transform: isOpen 
         ? `translate(${Math.cos(angle) * radius}px, ${Math.sin(angle) * radius}px) scale(1)`
-        : 'translate(0, 0) scale(0)',
+          : 'translate(0, 0) scale(0)',
       opacity: isOpen ? 1 : 0,
       transitionDelay: `${index * 50}ms`
     };
@@ -70,26 +70,24 @@ const FloatingMenu = ({ neighborhood = [], attacking = 0, onAttackClick = () => 
             flex items-center justify-center
             transition-all duration-300 ease-in-out
             hover:scale-110
-            ${attacking === neighbor.playerIndex ? 'ring-2 ring-violet-400' : ''}
+            ${attacking === neighbor.playerIndex ? 'shadow-[inset_0_0_15px_rgba(239,68,68,0.7)]' : 'bg-transparent'}
           `}
           style={{
             ...getItemStyle(index),
-            backgroundColor: neighbor.color,
+            border: `1px solid ${neighbor.color}`,
           }}
         >
-            { 'netWorth' in neighbor && (<small style={{
-            textAlign: 'center',
-            position: 'relative',
-            top: '-25px',
-            display: 'block',
-            fontSize: 'medium',
-            }}>
-            {Math.round(neighbor.netWorth / 100)}</small>) }
-          <span title={neighbor.nickname} className="text-xxs font-bold" style={{position: 'inherit'}}>{neighbor.nickname}</span>
+          {'netWorth' in neighbor && (
+            <small className="absolute -top-6 text-base">
+              {Math.round(neighbor.netWorth / 100)}
+            </small>
+          )}
+          <span title={neighbor.nickname} className="text-xxs font-bold">
+            {neighbor.nickname}
+          </span>
         </button>
       ))}
 
-      {/* Main FAB Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`
