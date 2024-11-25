@@ -1352,7 +1352,6 @@ function processRoundAndProceed(roomId) {
                 for (const player of gameState.players) {
                     player.attacking = "";
                     player.isScrying = false;
-                    generateNeighborhood(gameState, player.playerIndex);
                     if (!player.isBot) {
                         io.to(player.id).emit('playerState', {
                             room: roomId,
@@ -1371,7 +1370,6 @@ function processRoundAndProceed(roomId) {
         player.life = player.life * gameState.lifeGrowthRate;
         player.attacking = "";
         player.isScrying = false;
-        generateNeighborhood(gameState, player.playerIndex);
         if (!player.isBot) {
             io.to(player.id).emit('playerState', {room: roomId, user: player.id, playerState: player,
                 allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
@@ -1411,6 +1409,11 @@ function processRoundAndProceed(roomId) {
     gameState.firePrice = newPrices.firePrice;
     gameState.waterPrice = newPrices.waterPrice;
     gameState.round = gameState.round + 1;
+
+    for (const player of gameState.players) {
+        generateNeighborhood(gameState, player.playerIndex);
+    }
+
     gameState.allMoveHistory += `[S:a(${gameState.airPrice}),e(${gameState.earthPrice}),f(${gameState.firePrice}),w(${gameState.waterPrice}),weather(${gameState.weather})]`
     saveGameState(gameState);
 

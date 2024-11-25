@@ -109,7 +109,7 @@ const GameSettings = ({ socket, room, isFirstPlayer, currentSettings, setShowSet
                       id="roundCount"
                       type="number"
                       min="1"
-                      max="20"
+                      max="50"
                       value={roundCount}
                       onChange={(e) => setRoundCount(e.target.value)}
                       disabled={settingsLocked}

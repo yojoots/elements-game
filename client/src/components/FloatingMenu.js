@@ -70,21 +70,26 @@ const FloatingMenu = ({ neighborhood = [], attacking = 0, onAttackClick = () => 
             flex items-center justify-center
             transition-all duration-300 ease-in-out
             hover:scale-110
-            ${attacking === neighbor.playerIndex ? 'shadow-[inset_0_0_10px_rgba(239,68,68,0.9)]' : 'bg-transparent'}
-          `}
+            ${attacking === neighbor.playerIndex ? 'ring-1 ring-red-500 ring-offset-2 bg-red-500/10' : 'bg-transparent'}
+            `}
           style={{
             ...getItemStyle(index),
             border: `1px solid ${neighbor.color}`,
           }}
         >
           {'netWorth' in neighbor && (
-            <small className="absolute -top-6 text-base">
-              {Math.round(neighbor.netWorth / 100)}
-            </small>
-          )}
-          <span title={neighbor.nickname} className="text-xxs font-bold">
-            {neighbor.nickname}
-          </span>
+              <small className="absolute -top-6 text-base">
+                {Math.round(neighbor.netWorth / 100)}
+              </small>
+            )}
+            <span title={neighbor.nickname} className="text-xxs font-bold">
+              {neighbor.nickname}
+            </span>
+            {attacking === neighbor.playerIndex && (
+              <div className="absolute -top-3 -right-3 text-red-500">
+                <Sword size={16} className="animate-pulse" />
+              </div>
+            )}
         </button>
       ))}
 
