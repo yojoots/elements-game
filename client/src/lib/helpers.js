@@ -8,7 +8,7 @@ function colorFromElement(element) {
     } else if (element === "water") {
         return "blue"
     } else {
-        return "black"
+        return "white"
     }
 };
 

@@ -398,8 +398,8 @@
     vertical-align: middle;
     border-radius: 50%;
     box-shadow: inset 1px 1px 2px #245c8b;
-    background: #141427;
-    border: 1px solid black;
+    background: #1414271f;
+    border: 1px solid #ffffff36;
     cursor: pointer;
   }
 
@@ -573,8 +573,6 @@ h4 {
 
 
 
-
-
 .anyElement {
   align-items: center;
   align-content: center;
@@ -586,6 +584,8 @@ h4 {
   background-color: black;
   background-color: #06261f;
   border: 1px solid #ffffff0f;
+  background-color: transparent;
+  border: 1px groove #ffffffab;
   border-radius: 50%;
   width: 100px;
   height: 100px;
@@ -618,7 +618,7 @@ h4 {
     width: 100px;
     height: 100px;
     z-index: 3;
-    background-color: rgb(46, 54, 49);
+    background-color: rgb(46, 54, 49, 14%);
 }
 
 .lifeInCenter strong {
@@ -665,6 +665,8 @@ h4 {
     width: 100px;
     height: 100px;
     background-color: #f3f8ff73;
+    border: 1px solid #f3f8ff73;
+    background: transparent;
 }
 .fire {
     position: absolute;
@@ -674,6 +676,9 @@ h4 {
     width: 100px;
     height: 100px;
     background-color: #ba2807f5;
+    border: 1px solid #ba2807f5;
+    background: transparent;
+
 }
 .earth {
     position: absolute;
@@ -683,6 +688,8 @@ h4 {
     width: 100px;
     height: 100px;
     background-color: #332019;
+    border: 1px solid #3f2b24;
+    background: transparent;
 }
 .water {
     position: absolute;
@@ -692,6 +699,8 @@ h4 {
     width: 100px;
     height: 100px;
     background-color: #033c55eb;
+    border: 1px solid #033c55eb;
+    background: transparent;
 }
 
 
