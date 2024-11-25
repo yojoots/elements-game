@@ -71,5 +71,3 @@ heroku logs --tail
     - Bot behavior
     - Scry: full vs combined
 - [ ] Proper attack emissions and depictions
-- [ ] Show game results even to non-participants
-    - Fix end-of-game on early-wins

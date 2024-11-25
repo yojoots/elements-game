@@ -344,6 +344,10 @@ function arrContains(arr, val) {
     return arr.some((arrVal) => val === arrVal.id);
 }
 
+function isGameDone(gameState) {
+    return ((gameState.round >= gameState.roundCount) || (gameState.round > 0 && (gameState.players.filter(p => p.life > 0).length <= 1)));
+}
+
 io.on('connection', (socket) => {
     socket.on("joinRoom", (args) => {
         let roomId = args.roomId ? args.roomId : getRandomString(10);
@@ -368,28 +372,50 @@ io.on('connection', (socket) => {
 
         player = gameState.players.find((p) => {return p.id == userUid});
 
-        // Emit first player status
-        io.to(userUid).emit('firstPlayerStatus', {
-            isFirstPlayer: userUid === gameState.firstPlayerId
-        });
+        let isSpectator = gameState.round > 0 && !player;
+        if (isSpectator) {
+            // For spectators, only send public info about current players
+            io.to(userUid).emit('spectatorState', {
+                room: roomId,
+                players: gameState.players.map(p => ({
+                    nickname: p.nickname,
+                    color: p.color,
+                    playerIndex: p.playerIndex
+                })),
+                currentRound: gameState.round,
+                roundCount: gameState.roundCount,
+                isGameOver: isGameDone(gameState),
+                winningsStats: gameState.players.map(p => ({
+                    playerIndex: p.playerIndex,
+                    nickname: p.nickname,
+                    winnings: p.winnings
+                }))
+            });
+        } else {
+            // For playing players, emit their details
+            // Emit first player status
+            io.to(userUid).emit('firstPlayerStatus', {
+                isFirstPlayer: userUid === gameState.firstPlayerId
+            });
 
-        // Emit current game settings
-        io.to(roomId).emit('gameSettings', {
-            roundCount: gameState.roundCount,
-            roundDuration: gameState.roundDuration
-        });
+            // Emit current game settings
+            io.to(roomId).emit('gameSettings', {
+                roundCount: gameState.roundCount,
+                roundDuration: gameState.roundDuration
+            });
 
-        io.to(userUid).emit('playerState', {room: roomId, user: userUid, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
-        io.to(roomId).emit('newRound', {
-            round: gameState.round,
-            weather: gameState.weather,
-            airPrice: gameState.airPrice,
-            earthPrice: gameState.earthPrice,
-            firePrice: gameState.firePrice,
-            waterPrice: gameState.waterPrice,
-        });
+            io.to(userUid).emit('playerState', {room: roomId, user: userUid, playerState: player, allPlayers: gameState.players.map(p => getPublicPlayerInfo(p))});
+            io.to(roomId).emit('newRound', {
+                round: gameState.round,
+                weather: gameState.weather,
+                airPrice: gameState.airPrice,
+                earthPrice: gameState.earthPrice,
+                firePrice: gameState.firePrice,
+                waterPrice: gameState.waterPrice,
+            });
+        }
 
-        if (gameState.round >= gameState.roundCount) {
+        if (isGameDone(gameState)) {
             console.log(`Game ${roomId} complete; emitting game results`);
             io.to(roomId).emit('gameResults', gameState);
         }
@@ -1074,7 +1100,7 @@ function topTroops(player, attackingOrDefending) {
 function processRoundAndProceed(roomId) {
     gameState = knownGameStates[roomId];
 
-    if (gameState.round >= gameState.roundCount) {
+    if (isGameDone(gameState)) {
         console.log(`Game ${roomId} complete; balancing market and allocating winnings`);
         gameState.isTicking = false;
         gameState.airPrice = 0.25

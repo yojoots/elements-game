@@ -11,7 +11,7 @@ const JoinedPlayersList = ({ players, currentUserId }) => {
     });
 
   return (
-    <div className="w-full max-w-md mx-auto my-4 rounded-lg shadow p-4 bottom-0 absolute">
+    <div className="text-white w-full max-w-md mx-auto my-4 rounded-lg shadow p-4 mt-4">
       <div className="border-b pb-2 mb-3">
         <h2 className="text-lg font-semibold">
           👥 Joined Players ({humanPlayers.length})

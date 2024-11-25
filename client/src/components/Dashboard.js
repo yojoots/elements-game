@@ -11,6 +11,7 @@ import { serverTimestamp } from "firebase/firestore";
 import { SyncCountdownTimer } from "./SyncCountdownTimer";
 import { auth } from "../firebase-config.js";
 import { signOut } from "firebase/auth";
+import { Play } from 'lucide-react';
 import Cookies from "universal-cookie";
 
 import "../styles/Dashboard.css";
@@ -59,6 +60,8 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
   const [gameSettings, setGameSettings] = useState(null);
   const [showSettings, setShowSettings] = useState(true);
   const [allPlayers, setAllPlayers] = useState([]);
+  const [isSpectator, setIsSpectator] = useState(false);
+  const [spectatorState, setSpectatorState] = useState(null);
 
   useEffect(() => {
     alreadyDepBat.current = alreadyDepictedBattles; // Update ref when state changes
@@ -90,6 +93,11 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       setIsFirstPlayer(status.isFirstPlayer);
     });
 
+    socket.on('spectatorState', (state) => {
+      setIsSpectator(true);
+      setSpectatorState(state);
+    });
+
     // Cleanup
     return () => {
       socket.off('syncTimer');
@@ -97,6 +105,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       socket.off('paused');
       socket.off('gameSettings');
       socket.off('firstPlayerStatus');
+      socket.off('spectatorState');
     };
   }, [socket]);
 
@@ -462,7 +471,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
       if (value.roomId === room) {
         let player = value.players.find((p) => {return p.id === currentUser.uid});
         setFinalWinnings(player.winnings);
-        let fullWinningsStatistics = value.players.map((p) => {return {playerIndex: p.playerIndex, nickname: p.nickname, winnings: p.winnings};});
+        let fullWinningsStatistics = value.players.sort((a, b) => b.winnings - a.winnings).map((p) => {return {playerIndex: p.playerIndex, nickname: p.nickname, winnings: p.winnings};});
         setFullWinningsStats(fullWinningsStatistics);
         setGameIsOver(true);
       }
@@ -608,7 +617,7 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
             <div className="mb-2 mt-14">
             <h3 className="leaderboard-header">Leaderboard</h3>
             { fullWinningsStats.length > 0 &&
-              (fullWinningsStats.map((p) => {
+              (fullWinningsStats.sort((a, b) => b.winnings - a.winnings).map((p) => {
                 return (
                   <div key={p.playerIndex}>
                     <span className="bold">{p.nickname}</span>
@@ -623,271 +632,304 @@ export const Dashboard = ({ room, socket, currentUser, setIsAuth, setIsInChat })
     )
   }
 
+  if (isSpectator && spectatorState) {
+    if (spectatorState.isGameOver) {
+        return (
+            <div className="dashboard-app">
+                <div className="header game-over-header">
+                    <h2 className="mb-1">Game: {room || "Game"}</h2>
+                    <h3>Round: {spectatorState.currentRound} (COMPLETE)</h3>
+                </div>
+                <div className="messages mt-20">
+                    <h3 className="pl-1 text-center">Spectator View</h3>
+                    <div className="mb-2 mt-14">
+                        <h3 className="leaderboard-header">Leaderboard</h3>
+                        {spectatorState.winningsStats.sort((a, b) => b.winnings - a.winnings).map((p) => (
+                            <div key={p.playerIndex}>
+                                <span className="bold">{p.nickname}</span>
+                                <span className="ml-1">{USDollar.format(p.winnings)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    } else {
+        return (
+            <div className="dashboard-app">
+                <div className="header">
+                    <h2>Game: {room || "Game"} (Spectating)</h2>
+                    <h3>Round: {spectatorState.currentRound} / {spectatorState.roundCount}</h3>
+                </div>
+                <div className="messages mt-20">
+                    <h3 className="pl-1 text-center">Current Players</h3>
+                    <div className="mb-2 mt-4">
+                        {spectatorState.players.map((p) => (
+                            <div key={p.playerIndex} className="flex items-center gap-2 p-2">
+                                <span
+                                    className="w-4 h-4 rounded-full"
+                                    style={{ backgroundColor: p.color }}
+                                />
+                                <span>{p.nickname}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+  }
+
   return (
     <TooltipProvider>
-      <div className="dashboard-app">
-        <div className="header fixed">
-          <div className="messages">
-            <div className="pt-1 pl-6">
-            <div className="top-a1 flex font-semibold	z-100">
-              {false && <span className="active-player-color" style={{ backgroundColor: playerColor }}></span>}
-              <span className="pl-0 pr-2" title={currentUser.uid}>Player:</span>
-              <InlineNicknameEditor
-                currentNickname={nickname}
-                onSubmit={handleNicknameChange}
-                displayName={currentUser.displayName}
-                roundNumber={roundNumber}
-                color={ playerColor }
-              />
-              <i className="fa fa-sign-out signout-button my-auto" title="Log out" onClick={signUserOut}></i>
-            </div>
-            </div>
+        <div className="dashboard-app">
+          <div className="header fixed">
+            <div className="messages">
+              <div className="pt-1 pl-6">
+              <div className="top-a1 flex font-semibold	z-100">
+                {false && <span className="active-player-color" style={{ backgroundColor: playerColor }}></span>}
+                <span className="pl-0 pr-2" title={currentUser.uid}>Player:</span>
+                <InlineNicknameEditor
+                  currentNickname={nickname}
+                  onSubmit={handleNicknameChange}
+                  displayName={currentUser.displayName}
+                  roundNumber={roundNumber}
+                  color={ playerColor }
+                />
+                <i className="fa fa-sign-out signout-button my-auto" title="Log out" onClick={signUserOut}></i>
+              </div>
+              </div>
 
-            <div className="attack-and-defense js-explosion">
-              <div>{Math.round(empowerScore / 100)} ⚔️</div>
-              <div>{Math.round(fortifyScore / 100)} 🛡️</div>
+              <div className="attack-and-defense js-explosion">
+                <div>{Math.round(empowerScore / 100)} ⚔️</div>
+                <div>{Math.round(fortifyScore / 100)} 🛡️</div>
+              </div>
+            </div>
+            <div
+              className="weather">
+              <p className="cursor-copy"
+                title={room}
+                onClick={() =>
+                  copyToClipboard(room)
+                }
+              >
+                <b>Room:</b> {room}
+              </p>
+              {(showCopyTooltip && <div className="tooltip">Copied!</div>)}
+              <p><b>Round:</b> {roundNumber} / {roundCount}</p>
+              <p><b>Weather:</b> {roundWeather}</p>
             </div>
           </div>
-          <div
-            className="weather">
-            <p className="cursor-copy"
-              title={room}
-              onClick={() =>
-                copyToClipboard(room)
-              }
+          {showSettings && roundNumber === 0 && (
+              <GameSettings
+                socket={socket}
+                room={room}
+                userUid={currentUser.uid}
+                isFirstPlayer={isFirstPlayer}
+                currentSettings={gameSettings}
+                setShowSettings={setShowSettings}
+              />
+          )}
+          {!showSettings && roundNumber === 0 && (
+            <button 
+              title="Start"
+              onClick={() => setShowSettings(true)}
+              className="fixed bottom-4 right-4 p-2 text-blue-400 text-xs rounded shadow z-101"
             >
-              <b>Room:</b> {room}
-            </p>
-            {(showCopyTooltip && <div className="tooltip">Copied!</div>)}
-            <p><b>Round:</b> {roundNumber} / {roundCount}</p>
-            <p><b>Weather:</b> {roundWeather}</p>
-          </div>
-        </div>
-        {showSettings && roundNumber === 0 && (
-            <GameSettings
-              socket={socket}
-              room={room}
-              userUid={currentUser.uid}
-              isFirstPlayer={isFirstPlayer}
-              currentSettings={gameSettings}
-              setShowSettings={setShowSettings}
-            />
-        )}
-        {roundNumber === 0 && (
-          <JoinedPlayersList 
-            players={allPlayers} 
-            currentUserId={currentUser.uid}
-          />
-        )}
-        {!showSettings && roundNumber === 0 && (
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="fixed bottom-4 right-4 p-2 text-blue-400 text-xs rounded shadow z-101"
-          >
-            ⚙️
-          </button>
-        )}
-        <div className="mainbuttons">
-          <div id="arena" className="arena">
-          <div className="container relative overflow-y-visible">
-            <div className="relative">
-              <AnimatedBattleStats
-                lifeScore={lifeScore}
-                airScore={airScore}
-                earthScore={earthScore}
-                fireScore={fireScore}
-                waterScore={waterScore}
-                airPrice={airPrice}
-                earthPrice={earthPrice}
-                firePrice={firePrice}
-                waterPrice={waterPrice}
-                elementOrder={elementOrder}
-                onConvertLifeTo={convertLifeTo}
-              />
-              <InfoBubble className="absolute -right-0 top-1/2 transform" direction="downright" tooltipStyle={{top: "65px", right: "50px"}}>
-                <b className="small-caps">Elements Battle For Life</b>
-                <br />
-                Convert life force into elements. Each element has a dynamic price which will fluctuate each round.
-              </InfoBubble>
-            </div>
-            {/* <div className="lifeInCenter btn-4 anyElement">
-                <span>🌱</span>
-                <div><strong>{Math.round(lifeScore / 100)}</strong></div>
-              </div> */}
-              <InfoBubble className="absolute top-0" direction="lowright" tooltipStyle={{top: '470px', left: '0px', width: '200px'}}>
-                <b className="small-caps">Element Order Matters</b>
-                <br />
-                Order determines battle advantages. Drag or long-press to reorder elements (top first). <br />💧 &gt; 🔥 &gt; 💨 &gt; ⛰️ &gt; 💧...
-              </InfoBubble>
-              <InfoBubble className="absolute top-0" direction="right" tooltipStyle={{top: '280px', left: '0px', width: '200px'}}>
-                <b className="small-caps">Most Life Wins</b>
-                <br />
-                Life automatically grows each round, and can be converted into elements. Successful attacks will loot other players' life.<br />
-              </InfoBubble>
-              <div className="middleColumn relative" title={elementOrder}>
-                <Draggable onPosChangeTwo={reorderElements}>
-                  <div id="airOrderDiv" data-elch={"a"} className="anyElement"><span>💨</span></div>
-                  <div id="earthOrderDiv" data-elch={"e"} className="anyElement"><span>⛰️</span></div>
-                  <div id="fireOrderDiv" data-elch={"f"} className="anyElement"><span>🔥</span></div>
-                  <div id="waterOrderDiv" data-elch={"w"}  className="anyElement"><span>💧</span></div>
-                </Draggable>
-                {/* <PrettyDraggableList items={'🔥 ⛰️ 💧 💨'.split(' ')} /> */}
-              </div>
-              <div className="empower element-buttons">
-                { airScore > 0 && earthScore > 0 && fireScore > 0 &&
-                  <div>
-                    <div className={canCastSpell ? "text-blue-400 mb-1 spell-label" : "text-gray mb-1 spell-label"}>Empower</div>
-                    <button disabled={!canCastSpell} onClick={(e) => castSpell("empower", e)}>⚔️</button>
-                  </div>
-                }
-              </div>
-              <div className="fortify element-buttons">
-                { waterScore > 0 && earthScore > 0 && fireScore > 0 &&
-                  <div>
-                    <button disabled={!canCastSpell} onClick={(e) => castSpell("fortify", e)}>🛡️</button>
-                    <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>Fortify</div>
-                  </div>
-                }
-              </div>
-              <div className="scry element-buttons">
-              <ForceVisibleWhen when={airScore > 0 && fireScore > 0 && waterScore > 0}>
-                <div>
-                  <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
-                  <InfoBubble className="absolute top-0" direction="upperleft" tooltipStyle={{top: "115px", left: "-2px", width: '170px'}}>
-                    <b className="small-caps">Spells Cost Elements</b>
-                    <br />
-                    Combine 3 elements to cast a spell 1x per round.<br />
-                  </InfoBubble>
-                  <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>
-                    Scry
-                  </div>
-                </div>
-              </ForceVisibleWhen>
-              </div>
-              <div className="seed element-buttons">
-                { airScore > 0 && earthScore > 0 && waterScore > 0 &&
-                  <div>
-                    <div className={canCastSpell ? "text-blue-400 mb-1 spell-label" : "text-gray mb-1 spell-label"}>Seed</div>
-                    <button disabled={!canCastSpell} onClick={(e) => castSpell("seed", e)}>🌿</button>
-                  </div>
-                }
-              </div>
-              {
-              /* <div className="fire fireItem anyElement clickableButton" onClick={(e) => convertLifeTo("fire", e)}>
-                <div>
-                  <strong>{Math.round(fireScore / 100)}</strong></div>
-                  <span>🔥</span>
-                  <small>{Math.round(firePrice * 100) / 100}</small>
-              </div>
-              <div className="water waterItem anyElement clickableButton" onClick={(e) => convertLifeTo("water", e)}>
-                <div>
-                  <strong>{Math.round(waterScore / 100)}</strong></div>
-                  <span>💧</span>
-                  <small>{Math.round(waterPrice * 100) / 100}</small>
-              </div>
-              <div className="earth earthItem anyElement clickableButton" onClick={(e) => convertLifeTo("earth", e)}>
-                <div>
-                  <strong>{Math.round(earthScore / 100)}</strong></div>
-                  <span>⛰️</span>
-                  <small>{Math.round(earthPrice * 100) / 100}</small>
-              </div>
-              <div className="air airItem anyElement clickableButton" onClick={(e) => convertLifeTo("air", e)}>
-                <div>
-                  <strong>{Math.round(airScore / 100)}</strong></div>
-                  <span>💨</span>
-                  <small>{Math.round(airPrice * 100) / 100}</small>
-              </div> */
-              }
-            </div>
-            <div className="glowz"></div>
-            <canvas id="canvas1"></canvas>
-          </div>
-
-        <div id="battle"></div>
-          {/* disable trollbox for now */
-            false &&
-            <div id="trollbox">
-              {messages.map((message) => (
-                <div key={message.id} className="message">
-                  <span className="user" style={{color: message.color}}>{message.user}:</span> {message.text}
-                </div>
-              ))}
-            </div>
-          }
-        </div>
-            {false && 
-            <div className="neighborhood-buttons centered">
-              { neighborhood.length > 0 &&
-              (
-                <span className="attack-span">Attack</span>
-              )}
-              <div className="player-buttons">
-              { neighborhood.length > 0 &&
-                (neighborhood.map((neighbor) => {
-                  return (
-                    <Hexagon key={neighbor.playerIndex} color={neighbor.color} onClick={(e) => queueAttack(e, neighbor.playerIndex)} className={attacking === neighbor.playerIndex ? "flex-item attackable queued" : "flex-item attackable"} >
-                      {neighbor.nickname}
-                      { 'netWorth' in neighbor && (<small>&nbsp;({Math.round(neighbor.netWorth / 100)})</small>) }
-                    </Hexagon>
-                  );
-                }))
-              }
-              </div>
-            </div>
-            }
-        {/* disable trollbox for now */
-          false && 
-          <form onSubmit={handleSubmit} className="new-message-form">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(event) => setNewMessage(event.target.value)}
-              className="new-message-input"
-              placeholder="Enter chat here..."
-            />
-            <button type="submit" className="send-button">
-              Send
+              <Play fill="lightgreen" stroke="lightgreen" size={24} />
             </button>
-          </form>
-        }
-        { isAutoProceed ?
-          (<div className="timer-button">
-            <div className="w-16">
-              <SyncCountdownTimer
-                duration={roundDuration}
-                serverTimeRemaining={serverTime}
-                size={60}
-                onComplete={() => {
-                  return { shouldRepeat: true, delay: 0 }
-                }}
+          )}
+          {false && !showSettings && roundNumber === 0 && (
+            <button 
+              title="Start"
+              onClick={() => setShowSettings(true)}
+              className="fixed bottom-4 right-4 p-2 text-blue-400 text-xs rounded shadow z-101"
+            >
+              ⚙️
+              <Play fill="lightgreen" stroke="lightgreen" size={24} />
+            </button>
+          )}
+          <div className="mainbuttons">
+            <div id="arena" className="arena">
+            <div className="container relative overflow-y-visible">
+              <div className="relative">
+                <AnimatedBattleStats
+                  lifeScore={lifeScore}
+                  airScore={airScore}
+                  earthScore={earthScore}
+                  fireScore={fireScore}
+                  waterScore={waterScore}
+                  airPrice={airPrice}
+                  earthPrice={earthPrice}
+                  firePrice={firePrice}
+                  waterPrice={waterPrice}
+                  elementOrder={elementOrder}
+                  onConvertLifeTo={convertLifeTo}
+                />
+                <InfoBubble className="absolute -right-0 top-1/2 transform" direction="downright" tooltipStyle={{top: "65px", right: "50px"}}>
+                  <b className="small-caps">Elements Battle For Life</b>
+                  <br />
+                  Convert life force into elements. Each element has a dynamic price which will fluctuate each round.
+                </InfoBubble>
+              </div>
+              {/* <div className="lifeInCenter btn-4 anyElement">
+                  <span>🌱</span>
+                  <div><strong>{Math.round(lifeScore / 100)}</strong></div>
+                </div> */}
+                <InfoBubble className="absolute top-0" direction="lowright" tooltipStyle={{top: '470px', left: '0px', width: '200px'}}>
+                  <b className="small-caps">Element Order Matters</b>
+                  <br />
+                  Order determines battle advantages. Drag or long-press to reorder elements (top first). <br />💧 &gt; 🔥 &gt; 💨 &gt; ⛰️ &gt; 💧...
+                </InfoBubble>
+                <InfoBubble className="absolute top-0" direction="right" tooltipStyle={{top: '280px', left: '0px', width: '200px'}}>
+                  <b className="small-caps">Most Life Wins</b>
+                  <br />
+                  Life automatically grows each round, and can be converted into elements. Successful attacks will loot other players' life.<br />
+                </InfoBubble>
+                <div className="middleColumn relative" title={elementOrder}>
+                  <Draggable onPosChangeTwo={reorderElements}>
+                    <div id="airOrderDiv" data-elch={"a"} className="anyElement"><span>💨</span></div>
+                    <div id="earthOrderDiv" data-elch={"e"} className="anyElement"><span>⛰️</span></div>
+                    <div id="fireOrderDiv" data-elch={"f"} className="anyElement"><span>🔥</span></div>
+                    <div id="waterOrderDiv" data-elch={"w"}  className="anyElement"><span>💧</span></div>
+                  </Draggable>
+                  {/* <PrettyDraggableList items={'🔥 ⛰️ 💧 💨'.split(' ')} /> */}
+                </div>
+                <div className="empower element-buttons">
+                  { airScore > 0 && earthScore > 0 && fireScore > 0 &&
+                    <div>
+                      <div className={canCastSpell ? "text-blue-400 mb-1 spell-label" : "text-gray mb-1 spell-label"}>Empower</div>
+                      <button disabled={!canCastSpell} onClick={(e) => castSpell("empower", e)}>⚔️</button>
+                    </div>
+                  }
+                </div>
+                <div className="fortify element-buttons">
+                  { waterScore > 0 && earthScore > 0 && fireScore > 0 &&
+                    <div>
+                      <button disabled={!canCastSpell} onClick={(e) => castSpell("fortify", e)}>🛡️</button>
+                      <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>Fortify</div>
+                    </div>
+                  }
+                </div>
+                <div className="scry element-buttons">
+                <ForceVisibleWhen when={airScore > 0 && fireScore > 0 && waterScore > 0}>
+                  <div>
+                    <button disabled={!canCastSpell} onClick={(e) => castSpell("scry", e)}>🔮</button>
+                    <InfoBubble className="absolute top-0" direction="upperleft" tooltipStyle={{top: "115px", left: "-2px", width: '170px'}}>
+                      <b className="small-caps">Spells Cost Elements</b>
+                      <br />
+                      Combine 3 elements to cast a spell 1x per round.<br />
+                    </InfoBubble>
+                    <div className={canCastSpell ? "text-blue-400 mt-1 spell-label" : "text-gray mt-1 spell-label"}>
+                      Scry
+                    </div>
+                  </div>
+                </ForceVisibleWhen>
+                </div>
+                <div className="seed element-buttons">
+                  { airScore > 0 && earthScore > 0 && waterScore > 0 &&
+                    <div>
+                      <div className={canCastSpell ? "text-blue-400 mb-1 spell-label" : "text-gray mb-1 spell-label"}>Seed</div>
+                      <button disabled={!canCastSpell} onClick={(e) => castSpell("seed", e)}>🌿</button>
+                    </div>
+                  }
+                </div>
+              </div>
+              <div className="glowz"></div>
+              <canvas id="canvas1"></canvas>
+            </div>
+            {roundNumber === 0 && (
+              <JoinedPlayersList 
+                players={allPlayers} 
+                currentUserId={currentUser.uid}
               />
-            </div>
-            
-            {false && <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>}
-          </div>) :
-          ( false &&
-            <div className="timer-button">
-              <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={beginAutoProceeding}>⏱️</button></div>
-              { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
-            </div>
-          )
-        }
+            )}
 
-        <div className="absolute">
-          <ForceVisibleWhen when={roundNumber > 0}>
-              <FloatingMenu 
-                neighborhood={neighborhood}
-                attacking={attacking}
-                onAttackClick={(playerIndex) => queueAttack(playerIndex)}
+          <div id="battle"></div>
+            {/* disable trollbox for now */
+              false &&
+              <div id="trollbox">
+                {messages.map((message) => (
+                  <div key={message.id} className="message">
+                    <span className="user" style={{color: message.color}}>{message.user}:</span> {message.text}
+                  </div>
+                ))}
+              </div>
+            }
+          </div>
+              {false && 
+              <div className="neighborhood-buttons centered">
+                { neighborhood.length > 0 &&
+                (
+                  <span className="attack-span">Attack</span>
+                )}
+                <div className="player-buttons">
+                { neighborhood.length > 0 &&
+                  (neighborhood.map((neighbor) => {
+                    return (
+                      <Hexagon key={neighbor.playerIndex} color={neighbor.color} onClick={(e) => queueAttack(e, neighbor.playerIndex)} className={attacking === neighbor.playerIndex ? "flex-item attackable queued" : "flex-item attackable"} >
+                        {neighbor.nickname}
+                        { 'netWorth' in neighbor && (<small>&nbsp;({Math.round(neighbor.netWorth / 100)})</small>) }
+                      </Hexagon>
+                    );
+                  }))
+                }
+                </div>
+              </div>
+              }
+          {/* disable trollbox for now */
+            false && 
+            <form onSubmit={handleSubmit} className="new-message-form">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(event) => setNewMessage(event.target.value)}
+                className="new-message-input"
+                placeholder="Enter chat here..."
               />
-          </ForceVisibleWhen>
-          <InfoBubble direction="lowright" tooltipStyle={{position: "fixed", bottom: "25px", right: "105px", width: '160px'}}>
-              <b className="small-caps">Attack</b>
-              <br />
-              Use this menu during the game to attack neighboring players with your elements.
-          </InfoBubble>
+              <button type="submit" className="send-button">
+                Send
+              </button>
+            </form>
+          }
+          { isAutoProceed ?
+            (<div className="timer-button">
+              <div className="w-16">
+                <SyncCountdownTimer
+                  duration={roundDuration}
+                  serverTimeRemaining={serverTime}
+                  size={60}
+                  onComplete={() => {
+                    return { shouldRepeat: true, delay: 0 }
+                  }}
+                />
+              </div>
+              
+              {false && <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={stopAutoProceeding}>⏱️</button></div>}
+            </div>) :
+            ( false &&
+              <div className="timer-button">
+                <div className="w-full z-100"><button className="timer-button-holder bigText" onClick={beginAutoProceeding}>⏱️</button></div>
+                { false && <div className="centered"><button onClick={handleRoundIncrement}>Next Round</button></div> }
+              </div>
+            )
+          }
+
+          <div className="absolute">
+            <ForceVisibleWhen when={roundNumber > 0}>
+                <FloatingMenu 
+                  neighborhood={neighborhood}
+                  attacking={attacking}
+                  onAttackClick={(playerIndex) => queueAttack(playerIndex)}
+                />
+            </ForceVisibleWhen>
+            <InfoBubble direction="lowright" tooltipStyle={{position: "fixed", bottom: "25px", right: "105px", width: '160px'}}>
+                <b className="small-caps">Attack</b>
+                <br />
+                Use this menu during the game to attack neighboring players with your elements.
+            </InfoBubble>
+          </div>
         </div>
-      </div>
     </TooltipProvider>
   );
 };
