@@ -10,6 +10,7 @@ import { auth } from "./firebase-config";
 import { onAuthStateChanged } from "firebase/auth";
 import { setPersistence, browserLocalPersistence } from "firebase/auth";
 import 'font-awesome/css/font-awesome.min.css';
+import EnergyTransferCircle from "./components/EnergyTransferCircle";
 
 const cookies = new Cookies();
 const socket = io.connect(process.env.REACT_APP_SOCKET_SERVER, {
@@ -82,6 +83,10 @@ function ElementsApp() {
       window.removeEventListener('popstate', handleLocationChange);
     };
   }, []);
+
+  if (room === "flow") {
+    return <EnergyTransferCircle></EnergyTransferCircle>
+  }
 
   if (loading) {
     return (
